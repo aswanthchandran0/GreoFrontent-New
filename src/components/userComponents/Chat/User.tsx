@@ -1,0 +1,63 @@
+import { useEffect, useState } from "react";
+import { getUserByIdApi } from "../../../services/user/api";
+import dayjs from "dayjs";
+import { DEFAULT_PROFILE_IMAGE } from "../../../assets/images";
+import { User } from "../../../redux/slices/userSlice";
+import { useNavigate } from "react-router-dom";
+
+interface UserProps {
+  chat: {
+    members: string[];
+    timeStamb: Date;
+  };
+  currentUserId: string | null;
+}
+
+const UserComponent = ({ chat, currentUserId }: UserProps) => {
+  const [userData, setUserData] = useState<User | null>(null);
+  const navigate = useNavigate()
+    // Get the opponent user's data
+    useEffect(() => {
+      const opponentId = chat.members.find((id) => id !== currentUserId);
+      if (opponentId) {
+        const fetchUserData = async () => {
+          const { data } = await getUserByIdApi(opponentId);
+          setUserData(data);
+        };
+        fetchUserData();
+      }
+    }, [chat, currentUserId]);
+
+
+    // Format the last active time
+  const lastActive = 'active'// For displaying "1h ago" or "5m ago"
+
+    // Handle user click to navigate to chat with that user
+    const handleUserClick = () => {
+      const opponentId = chat.members.find((id) => id !== currentUserId);
+      if (opponentId) {
+        navigate(`/chat/${opponentId}`); // Navigate with userId as a parameter
+      }
+    };
+
+    return(
+        <div className="cursor-pointer hover:bg-background-EerieBlack" onClick={handleUserClick}>
+ <div className="flex flex-row items-center w-full gap-2 p-2">
+              <div className="flex-shrink-0 w-16 h-16 overflow-hidden rounded-full">
+           <img className="object-cover w-full h-full" src={userData?.profileImage || DEFAULT_PROFILE_IMAGE}
+          alt={userData?.name || "User Profile"} />
+              </div>
+
+              <div className="flex justify-between w-full">
+                <span className="text-md font-golos ">{userData?.name || userData?.user_name}</span>
+                <span className="font-bold text-text-green font-golos">
+                {/* {userData ? (userData.status === "online" ? "online" : lastActive) : "offline"} */}
+                </span>
+              </div>
+            </div>
+      
+        </div>
+    )
+}
+
+export default UserComponent

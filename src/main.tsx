@@ -1,41 +1,24 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import { createBrowserRouter,RouterProvider } from 'react-router-dom'
-import HomeScreen from './pages/HomeScreen'
-import MainLayout from './components/userComponents/MainLayout'
+// index.js
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import "./index.css";
+import App from "./App";
+import { store, persistor } from "./redux/store";
+import { PersistGate } from "redux-persist/integration/react";
+import { Provider } from "react-redux";
+import { GoogleOAuthProvider } from "@react-oauth/google";
+import { SocketProvider } from "./context/SocketContext";
 
-const router = createBrowserRouter([
- {
-  path:'/',
-  element:<MainLayout/>,
-  children:[
-    {
-      index:true,
-      element:<HomeScreen/>
-    },
-    {
-      path:'chat'
-    },
-    {
-      path:'profile'
-    },
-    {
-      path:'notification'
-    },
-    {
-      path:'Roll'
-    },
-    {
-      path:'Explore'
-    }
-  ]
- }
-])
-
-
-createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
-<RouterProvider router={router}/>
-  </StrictMode>,
-)
+    <Provider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
+        <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_API_CLIENT_ID}>
+          <SocketProvider>
+          <App />
+          </SocketProvider>
+        </GoogleOAuthProvider>
+      </PersistGate>
+    </Provider>
+  </StrictMode>
+);
