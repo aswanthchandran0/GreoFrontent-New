@@ -123,7 +123,6 @@ export const getUserFeedApi = async () => {
 
 
 export const likePostApi = async (likeIds: string[], unlikeIds: string[]) => {
-  console.log('likedpost', likeIds)
   return await API.post('/like_post', { likeIds, unlikeIds });
 };
 

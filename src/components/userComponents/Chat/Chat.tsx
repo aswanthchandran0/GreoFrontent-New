@@ -25,9 +25,13 @@ type OutletContextType = {
 };
 
 const Chat = () => {
+  const opponentUserId = useParams().userId
   const [messages, setMessages] = useState<Message[] | null>([]);
   const [newMessage, setNewMessage] = useState<string>("");
   const [isTyping, setIsTyping] = useState(false);
+  console.log(
+    'messages in the message page',messages
+  )
   const navigate = useNavigate()
   const {
       opponentUser,
@@ -46,11 +50,7 @@ const Chat = () => {
     setIsTyping(e.target.value.length > 0);
   };
 
-  // useEffect(()=>{
-
-  // },[])
-
-  // receive message
+ 
 
   useEffect(() => {
     if (receiveMessage !== null && receiveMessage.chatId === chat?.id) {
@@ -59,22 +59,22 @@ const Chat = () => {
   }, [receiveMessage]);
   
     // fetch messages
-    useEffect(() => {
-      if(chat?.id){
-        const fetchMessages = async () => {
-          try{
-            setMessages([])
-            const { data } = await getMessagesApi(chat.id);
-            setMessages(data);
-             console.log('fetching was working')
-             console.log('messages in fetching',messages)
-          }catch(err){
-            console.log("Error from fetching message",err)
-          }
-          }
-        if (chat) fetchMessages();
-      }
-      }, [chat?.id]);
+    // useEffect(() => {
+    //   if(chat?.id){
+    //     const fetchMessages = async () => {
+    //       try{
+    //         setMessages([])
+    //         const { data } = await getMessagesApi(chat.id);
+    //         setMessages(data);
+    //          console.log('fetching was working')
+    //          console.log('messages in fetching',messages)
+    //       }catch(err){
+    //         console.log("Error from fetching message",err)
+    //       }
+    //       }
+    //     if (chat) fetchMessages();
+    //   }
+    //   }, [chat?.id]);
     
 
     
@@ -122,7 +122,6 @@ const Chat = () => {
   useEffect(() => {
     if (opponentUser || chat || isOnline) {
       console.log("Context data updated:", { opponentUser, chat, isOnline });
-      
       if (chat) {
         const fetchMessages = async () => {
           const { data } = await getMessagesApi(chat.id);
@@ -131,8 +130,7 @@ const Chat = () => {
         fetchMessages();
       }
     }
-  }, [opponentUser, chat, isOnline]);
-          
+  }, [opponentUser, chat, isOnline,opponentUserId]);
   return (
     <div className="flex flex-col w-full h-full">
       <div className="flex flex-row items-center w-full p-2 space-x-2 border border-text-charcoal">

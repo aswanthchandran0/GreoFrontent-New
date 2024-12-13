@@ -11,14 +11,20 @@ export const getSocketInstance = () =>{
             withCredentials:true,
             transports:["websocket"]
         })
-
+          
         socket.on('connect',()=>{
             console.log('Socket is connected')
         })
 
+        socket.on('connect_error', (err) => {
+            console.error('Connection failed:', err);
+          });
+
+          
         socket.on("disconnect",()=>{
             console.log('Socket disconnected')
         })
+
     }
     return socket
 }

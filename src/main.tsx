@@ -8,6 +8,7 @@ import { PersistGate } from "redux-persist/integration/react";
 import { Provider } from "react-redux";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { SocketProvider } from "./context/SocketContext";
+import { CallProvider } from "./context/CallContext";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -15,7 +16,9 @@ createRoot(document.getElementById("root")!).render(
       <PersistGate loading={null} persistor={persistor}>
         <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_API_CLIENT_ID}>
           <SocketProvider>
+            <CallProvider>
           <App />
+          </CallProvider>
           </SocketProvider>
         </GoogleOAuthProvider>
       </PersistGate>

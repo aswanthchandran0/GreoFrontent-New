@@ -11,65 +11,61 @@ import { Message } from "yup"
 import { useSocket } from "../context/SocketContext"
 
 const ChatScreen = () =>{
-   const {userId} = useParams()
-   const {socket} = useSocket() // access the socket instance
-   const localUser = useSelector((state:RootState)=> state.UserReducer.user)
+  const { userId } = useParams();
+  const { socket, onlineUsers, sendMessage, receiveMessage } = useSocket(); // Access socket instance and online users from context
+  const localUser = useSelector((state: RootState) => state.UserReducer.user);
 
-   // other state variables...
-   const [opponentUser,setOpponentUser] = useState<User| null>(null)
-   const [chats,setChats] = useState<IChat[]>([])
-   const [currentChat, setCurrentChat] = useState<IChat | null>(null)
-   const [selectedUserData, setSelectedUserData] = useState<User | null>(null)
-   const [onlineUsers, setOnlineUsers] = useState([])
-   const [sendMessage,setSendMessage] = useState<any>(null)
-   const [receiveMessage,setReceiveMessage] = useState<Message|null>(null)
-   
-   const navigate = useNavigate()
-   
-    // fetching opponent user
-    useEffect(()=>{
-      if(userId){
-      const fetchOpponentUser = async()=>{
-       const response = await  getUserByIdApi(userId || '')
-       setOpponentUser(response.data)
-      }
-   
-      fetchOpponentUser()
-      }else{
-         console.log('userId is undefined')
-      }
+  // State variables...
+  const [opponentUser, setOpponentUser] = useState<User | null>(null);
+  const [chats, setChats] = useState<IChat[]>([]);
+  const [currentChat, setCurrentChat] = useState<IChat | null>(null);
+  const [selectedUserData, setSelectedUserData] = useState<User | null>(null);
 
-    },[userId])
+  const navigate = useNavigate();
 
-    // fetch chats
-    useEffect(() => {
-      const fetchChats = async () => {
-        const { data } = await getChatsApi(localUser?.id || '')
-        setChats(data)
-  
-      }
-  
-      fetchChats()
-    }, [localUser?.id,userId])
+  // Fetch opponent user data
+  useEffect(() => {
+    if (userId) {
+      const fetchOpponentUser = async () => {
+        const response = await getUserByIdApi(userId || "");
+        setOpponentUser(response.data);
+      };
 
+      fetchOpponentUser();
+    } else {
+      console.log("userId is undefined");
+    }
+  }, [userId]);
 
-    // handiling conversation
+  // Fetch chats data
+  useEffect(() => {
+    const fetchChats = async () => {
+      const { data } = await getChatsApi(localUser?.id || "");
+      setChats(data);
+    };
+
+    fetchChats();
+  }, [localUser?.id, userId]);
+
+  // Handle conversation click
   const handleConversationClick = async (chat: IChat) => {
-   setCurrentChat(chat)
-   const userId = chat.members.find((id) => id !== localUser?.id)
-   if (userId) {
-     const { data } = await getUserByIdApi(userId)
-     setSelectedUserData(data)
-   }
-   navigate(`/chat/${chat.id}`)
- }
-    
+    setCurrentChat(chat);
+    const userId = chat.members.find((id) => id !== localUser?.id);
+    if (userId) {
+      const { data } = await getUserByIdApi(userId);
+      setSelectedUserData(data);
+    }
+    navigate(`/chat/${chat.id}`);
+  };
 
+  // Check if user is online
+  const isUserOnline = (userId: string) => {
+    return onlineUsers.some((user) => user.userId === userId);
+  };
 
   // Check if chat exists, create one if not
   const checkAndCreateChat = async () => {
     if (!currentChat && userId) {
-
       try {
         const response = await createChatApi({
           senderId: localUser?.id,
@@ -82,47 +78,10 @@ const ChatScreen = () =>{
       }
     }
   };
-  
+
   useEffect(() => {
     checkAndCreateChat();
-  }, [userId])
-  
- // list for online users 
- useEffect(() => {
-   socket.emit("new-user-add", localUser?.id)
-   socket.on('get-users', (users) => { 
-     setOnlineUsers(users)
-    })
-
-    return () => {
-      socket.off("get-users"); // Cleanup listener
-   };
-   
- }, [socket,localUser?.id])
-
-
- // send message to the socket server
- useEffect(()=>{
-   if(sendMessage!==null){
-     socket.emit(`send-message`,sendMessage)
-   }
- },[socket,sendMessage])
-
- // receive message from the socket server
- useEffect(()=>{
-  socket.on("receive-message",(data)=>{
-   setReceiveMessage(data)
-  })
-
-  return ()=>{
-    socket.off("receive-message")
-  }
- },[socket])
-
-// is online
- const isUserOnline = (userId: string) => {
-  return onlineUsers.some((user) => user.userId === userId);
-};
+  }, [userId]);
 
 
 
@@ -142,7 +101,7 @@ const ChatScreen = () =>{
    chat:currentChat,
    localUserId:localUser?.id || '',
    userData:selectedUserData,
-   setSendMessage,
+   setSendMessage:sendMessage,
    receiveMessage,
    isOnline: isUserOnline(opponentUser?.id || ""),
  }}/>
