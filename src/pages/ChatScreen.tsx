@@ -65,24 +65,24 @@ const ChatScreen = () =>{
   };
 
   // Check if chat exists, create one if not
-  // const checkAndCreateChat = async () => {
-  //   if (!currentChat && userId) {
-  //     try {
-  //       const response = await createChatApi({
-  //         senderId: localUser?.id,
-  //         receiverId: userId,
-  //       });
-  //       setChats((prevChats) => [...prevChats, response.data]);
-  //       setCurrentChat(response.data);
-  //     } catch (error) {
-  //       console.error("Error creating chat:", error);
-  //     }
-  //   }
-  // };
+  const checkAndCreateChat = async () => {
+    if (!currentChat && userId) {
+      try {
+        const response = await createChatApi({
+          senderId: localUser?.id,
+          receiverId: userId,
+        });
+        setChats((prevChats) => [...prevChats, response.data]);
+        setCurrentChat(response.data);
+      } catch (error) {
+        console.error("Error creating chat:", error);
+      }
+    }
+  };
 
-  // useEffect(() => {
-  //   checkAndCreateChat();
-  // }, [userId]);
+  useEffect(() => {
+    checkAndCreateChat();
+  }, [userId]);
 
 
 
