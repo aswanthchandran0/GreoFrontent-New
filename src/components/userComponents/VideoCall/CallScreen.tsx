@@ -42,10 +42,12 @@ const CallScreen: React.FC<CallScreenProps>  = ({
   useEffect(()=>{
     if (localVideoRef.current && localStream){
       localVideoRef.current.srcObject = localStream
+      localVideoRef.current.style.transform = "scaleX(1)"
     }
 
     if(remoteVideoRef.current && remoteStream){
       remoteVideoRef.current.srcObject = remoteStream
+      remoteVideoRef.current.style.transform = "scaleX(1)"
     }
     
     if(localStream){
@@ -55,18 +57,18 @@ const CallScreen: React.FC<CallScreenProps>  = ({
       const audioTrack = localStream.getAudioTracks()[0]
       if(audioTrack) audioTrack.enabled = audioEnabled
     }
-  },[localStream,remoteStream,videoEnabled,audioEnabled])
+  },[localStream,remoteStream,videoEnabled,audioEnabled,localVideoRef,remoteVideoRef])
 
   const endVideoCall = ()=>{
     console.log('video call end request was reached')
     localStream?.getTracks().forEach((track) => track.stop());
     remoteStream?.getTracks().forEach((track) => track.stop());
-    socket?.emit("end-video-call", { receiverId:opponentUserId });
+    socket?.emit("end-video-call", { opponentUserId });
     endCall()
   }
   
   useEffect(()=>{
-      socket?.on("video-call-ended",endVideoCall)
+      socket.on("video-call-ended",endVideoCall)
     return () => {
       if (socket) {
         socket.off("video-call-ended", endVideoCall);
@@ -83,6 +85,7 @@ const CallScreen: React.FC<CallScreenProps>  = ({
           ref={remoteVideoRef}
           autoPlay
           className="absolute inset-0 object-cover w-full h-full bg-black"
+          style={{transform:"scaleX(1)"}}
         ></video>
 
         <div className="absolute w-1/4 border-2 rounded-md border-background-Grayish bottom-4 right-4">
@@ -94,6 +97,7 @@ const CallScreen: React.FC<CallScreenProps>  = ({
           autoPlay
           muted
            className="w-full h-full"
+           style={{ transform: "scaleX(1)" }} 
         ></video>
         :
         (

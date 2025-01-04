@@ -3,11 +3,14 @@ import { FaRegComment } from "react-icons/fa";
 import { IPost } from "../../../Types/postTypes";
 import { useState } from "react";
 import Comments from "../post/Comments";
+import { string } from "yup";
 
 interface UserPostCardProps {
     post:IPost
+    clearDeletePostCatch:(postId:string)=>void
+    handleUpdatePostCatch:(postId:string,content:string)=>void
 }
-const UserPostCard:React.FC<UserPostCardProps> = ({post}) =>{
+const UserPostCard:React.FC<UserPostCardProps> = ({post,clearDeletePostCatch,handleUpdatePostCatch}) =>{
     const [isCommentBoxOpen, setIsCommentBoxOpen] = useState(false);
 
     
@@ -15,6 +18,16 @@ const UserPostCard:React.FC<UserPostCardProps> = ({post}) =>{
   const handleCommentBox = ()=>{
     setIsCommentBoxOpen(!isCommentBoxOpen)
    }
+
+   const handleClearDeletePostCatch = (postId:string)=>{
+    clearDeletePostCatch(postId)
+    setIsCommentBoxOpen(false)
+   }
+
+   // handling the commentCount 
+   const handlingCommentCount = (commentCount:number)=>{
+    post.commentCount = commentCount
+ }
 
     return(
         <div onClick={handleCommentBox} className="relative p-1 cursor-pointer">
@@ -33,7 +46,7 @@ const UserPostCard:React.FC<UserPostCardProps> = ({post}) =>{
                  
 {
           isCommentBoxOpen &&(
-            <Comments post={post} isLiked={false} onLikeToggle={()=>false} onClose={handleCommentBox} />
+            <Comments post={post} isLiked={false} onLikeToggle={()=>false} onClose={handleCommentBox} clearDeletePostCatch={handleClearDeletePostCatch} handleUpdatePostCatch={handleUpdatePostCatch} onCommentCountChange={handlingCommentCount} />
           )
         }
 

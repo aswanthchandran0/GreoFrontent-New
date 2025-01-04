@@ -1,7 +1,11 @@
+import { IComment } from "../../../Types/commentTypes"
 import { timeformat } from "../../../utils/formating"
 
+interface Props{
+  comment:IComment
+}
 
-const Comment = ({comment})=>{
+const Comment:React.FC<Props> = ({comment})=>{
   
     return(
         <div className="flex flex-row items-center space-x-2 ">
@@ -10,7 +14,7 @@ const Comment = ({comment})=>{
         </div>
         <div className="flex flex-col mb-auto">
         <p  className="text-text-white font-golos">{comment.userDetails.user_name}</p>
-        <p className="text-sm text-text-darkGray font-outfit">{timeformat(comment.createdAt)}</p>
+        <p className="text-sm text-text-darkGray font-outfit">{timeformat(comment.createdAt?.toString() || '')}</p>
         </div>
         <div className="mb-auto md:w-80 ">
         <p className=" text-text-darkGray font-golos">{comment.content}</p>

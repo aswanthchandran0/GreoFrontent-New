@@ -3,9 +3,21 @@ import { AppDispatch, RootState } from "../../../redux/store"
 import { useNavigate, useParams } from "react-router-dom"
 import { followUserApi, unfollowUserApi } from "../../../services/user/api"
 import { useEffect, useState } from "react"
-import { logOut } from "../../../redux/slices/userSlice"
+import { logOut, User } from "../../../redux/slices/userSlice"
+import FollowersFollowing from "./FollowersFollowing"
 
-const UserProfile = ({profileUser, initialIsFollowing,initialFollowersCount,followingCount,postCount})=>{
+
+export type showComponentType =  'Followers'|'Following'|null
+
+interface UserProfileProps{
+  profileUser:User | null
+  initialIsFollowing:boolean
+  initialFollowersCount:number
+  followingCount:number
+  postCount:number
+}
+
+const UserProfile:React.FC<UserProfileProps> = ({profileUser, initialIsFollowing,initialFollowersCount,followingCount,postCount})=>{
   const user = useSelector((state:RootState)=> state.UserReducer.user)
   const dispatch = useDispatch<AppDispatch>()
   const {username} = useParams()
@@ -23,7 +35,8 @@ const UserProfile = ({profileUser, initialIsFollowing,initialFollowersCount,foll
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
   const [followersCount, setFollowersCount] = useState(initialFollowersCount);
   const [isFollowingLoading, setIsFollowingLoading] = useState(false);
-
+  const [isFollowerFollowingComponent,setIsFollowerFollowingComponent] = useState(false)
+  const [showComponent,setShowComponet] = useState<showComponentType>(null)
   // Update followers count and following status when initial props change
   useEffect(() => {
     setFollowersCount(initialFollowersCount);
@@ -63,6 +76,19 @@ const UserProfile = ({profileUser, initialIsFollowing,initialFollowersCount,foll
   const handleMessageClick = () => {
     navigate(`/chat/${profileUser?.id}`)
   }
+
+  // handle onClose of followingComponent
+  const OnCloseFollowerFollowingComponent = ()=>{
+    setIsFollowerFollowingComponent(false)
+  }
+
+  // handle show followers , following component
+  const handleShowComponet = (data:showComponentType)=>{
+     setShowComponet(data)
+     setIsFollowerFollowingComponent(true)
+  }
+
+  console.log('is following',isFollowing)
   
     return(
         <div className="flex flex-col items-center justify-center w-full ">
@@ -82,12 +108,12 @@ const UserProfile = ({profileUser, initialIsFollowing,initialFollowersCount,foll
           <div className="flex flex-row space-x-3 dark:text-text-white ">
             <div className="flex flex-col items-center justify-center">
               <span className="text-base font-medium cursor-pointer font-golos">followers</span>
-              <span className="text-xl font-semibold cursor-pointer font-golos">{followersCount??0}</span>
+              <span onClick={()=>handleShowComponet('Followers')} className="text-xl font-semibold cursor-pointer font-golos">{followersCount??0}</span>
             </div>
 
             <div className="flex flex-col items-center justify-center">
               <span className="text-base font-medium cursor-pointer font-golos">following</span>
-              <span className="text-xl font-semibold cursor-pointer font-golos">{followingCount??0}</span>
+              <span onClick={()=>handleShowComponet('Following')} className="text-xl font-semibold cursor-pointer font-golos">{followingCount??0}</span>
             </div>
 
 
@@ -128,6 +154,10 @@ const UserProfile = ({profileUser, initialIsFollowing,initialFollowersCount,foll
         )}
       </div>
            
+           {
+            isFollowerFollowingComponent && <FollowersFollowing  showComponent={showComponent} onClose={ OnCloseFollowerFollowingComponent} />
+    
+                        }
         </div>
     )
 }

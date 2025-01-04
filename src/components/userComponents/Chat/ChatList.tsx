@@ -33,7 +33,7 @@ interface ChatListProps {
     );
   });
 
-    
+
     return(
         <>
             <div className="flex flex-col overflow-y-scroll scrollbar-hide">

@@ -4,6 +4,9 @@ import { tokenService } from "./tokenService";
 import { navigateTo } from "../../utils/navigate";
 import { logOut } from "../../redux/slices/userSlice";
 import { store } from "../../redux/store";
+import { RollUploadPayload } from "../../components/userComponents/profile/RollUpload";
+import { ReportReasonType } from "../../Types/postTypes";
+import { SavedItemArrayElement } from "../../Types/savedItemTypes";
 const API = axios.create({
   baseURL: import.meta.env.VITE_BASE_URL,
 });
@@ -26,6 +29,11 @@ API.interceptors.response.use(
       _retry?: boolean;
     };
 
+    if(error.response?.status ===403  && !originalRequest._retry){
+      tokenService.clearToken()
+      store.dispatch(logOut())
+    
+    }
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       const refreshToken = tokenService.getRefreshToken();
@@ -116,8 +124,9 @@ export const postUploadApi = async (formData: FormData) => {
   return  await API.post('/post_upload', formData)
 }
 
-export const getUserFeedApi = async () => {
-  return await API.get(`/user_feed`)
+export const getUserFeedApi = async (skip:number,limit:number) => {
+  console.log('skip',skip)
+  return await API.get(`/user_feed/${skip}/${limit}`)
 }
 
 
@@ -158,3 +167,92 @@ export const createChatApi = async(data)=>{
   return await API.post('/chat',data)
 }
 
+export const getFollowersApi = async(username:string)=>{
+  return await API.get(`/followers/${username}`)
+}
+
+export const getFollowingApi = async(username:string)=>{
+  return await API.get(`/following/${username}`)
+}
+
+export const rollUploadApi  = async(payload:RollUploadPayload)=>{
+  console.log('data in roll upload',payload)
+  return await API.post('/roll',payload)
+}
+
+export const getUserRollApi = async(userId:string)=>{
+  return await API.get(`/roll/${userId}`)
+}
+
+
+
+export const likeRollApi = async (likeIds: string[], unlikeIds: string[]) => {
+  return await API.post('/roll_like_post', { likeIds, unlikeIds });
+};
+
+
+
+export const rollGetCommentsApi = async (rollId: string) => {
+  return await API.get(`/roll_get_comments/${rollId}`,)
+}
+
+
+export const rollCommentSentAPi = async (rollId: string, content: string) => {
+  console.log('post id and commment', rollId, content)
+  return await API.post(`/roll_post_comment`, { rollId, content })
+}
+
+export const latestRollApi = async (page:number,pageSize:number,)=>{
+  try {
+    const response = await API.get('/latest-roll/', {
+      params: { page, pageSize }, // Pass pagination params
+    });
+    return response;
+  } catch (error) {
+    console.error('Error fetching latest rolls:', error);
+    throw error;
+  }
+}
+
+
+export const deletePostApi = async(postId:string)=>{
+  return await API.delete(`/post/${postId}`)
+}
+
+export const updatePostApi = async (postId:string,content:string)=>{
+  return await API.patch(`/post`,{content,postId})
+}
+
+export const reportPostApi  =async(postId:string,reason:ReportReasonType)=>{
+  return await API.post('/report-post',{postId,reason})
+}
+
+export const searchUsersApi = async(query:string)=>{
+  return await API.get(`/users/${query}`)
+}
+
+export const getLikedUsersApi = async (postId:string)=>{
+  return await API.get(`/likedUsers/${postId}`)
+}
+
+export const getExploreDataApi = async(page:number,pageSize:number)=>{
+  return await API.get(`explore/${page}/${pageSize}`)
+}
+
+export const getSingePostApi = async(postId:string)=>{
+  console.log('geti single post api was calling')
+  return await API.get(`post/${postId}`)
+
+}
+
+export const saveItemApi = async(item:SavedItemArrayElement)=>{
+  return await API.post('/saveItem',item)
+}
+
+export const deleteSavedItemApi = async(itemId:string,type:string)=>{
+  return await API.delete(`/saveItem?itemId=${itemId}&type=${type}`)
+}
+
+export const getSavedItemApi = async()=>{
+  return await API.get('/saveItem')
+}

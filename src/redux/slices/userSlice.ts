@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 import { tokenService } from "../../services/user/tokenService";
 import { GoogleSignInApi, GoogleSignUpApi, SigninApi, signUpApi } from "../../services/user/api";
 import toast from "react-hot-toast";
@@ -14,9 +14,11 @@ export const signUpUser = createAsyncThunk(
       const response = await signUpApi(userData);
       return response.data.user;
     } catch (error) {
-      toast.error(error?.response?.data?.error);
-      if (axios.isAxiosError(error))
-      return thunkAPI.rejectWithValue(error.response?.data?.error);
+      if (axios.isAxiosError(error) && error.response) {
+        const errorMessage = error.response.data.error || "An error occurred";
+        toast.error(errorMessage);
+        return thunkAPI.rejectWithValue(errorMessage);
+      }
       else return thunkAPI.rejectWithValue("Something went wrong");
     }
   }
@@ -33,9 +35,12 @@ export const singinUser = createAsyncThunk(
       );
       return response.data.user;
     } catch (error) {
-      toast.error(error?.response?.data?.error);
-      if (axios.isAxiosError(error))
-        thunkAPI.rejectWithValue(error.response?.data?.error);
+     
+      if (axios.isAxiosError(error) && error.response) {
+        const errorMessage = error.response.data.error || "An error occurred";
+        toast.error(errorMessage);
+        return thunkAPI.rejectWithValue(errorMessage)
+      }
       else return thunkAPI.rejectWithValue("Something went wrong");
     }
   }
@@ -50,10 +55,10 @@ export const GoogleSignUp = createAsyncThunk(
      return response.data.user
     }
     catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        const axiosError = error as AxiosError;
-        toast.error(axiosError.response?.data?.error);
-       return thunkAPI.rejectWithValue(axiosError.response?.data?.error);
+      if (axios.isAxiosError(error) && error.response) {
+        const errorMessage = error.response.data.error || "An error occurred";
+        toast.error(errorMessage);
+        return thunkAPI.rejectWithValue(errorMessage);
       } else {
         toast.error("Something went wrong");
        return thunkAPI.rejectWithValue("Something went wrong");
@@ -73,10 +78,10 @@ export const GoogleSignIn = createAsyncThunk(
       return response.data.user
     }
     catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        const axiosError = error as AxiosError;
-        toast.error(axiosError.response?.data?.error);
-       return thunkAPI.rejectWithValue(axiosError.response?.data?.error);
+      if (axios.isAxiosError(error) && error.response) {
+        const errorMessage = error.response.data.error || "An error occurred";
+        toast.error(errorMessage);
+        return thunkAPI.rejectWithValue(errorMessage);
       } else {
         toast.error("Something went wrong");
        return thunkAPI.rejectWithValue("Something went wrong");
@@ -102,6 +107,7 @@ export interface User {
   user_gender: UserGender;
   private_account: boolean;
   publicKey?: string;
+  otherUser?:boolean
 }
 
 interface UserAuthState {

@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 //icons
 import { FiSearch } from "react-icons/fi";
 import { FaXmark } from "react-icons/fa6";
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { GoHomeFill } from "react-icons/go";
 import { GoHome } from "react-icons/go";
 import { MdOutlineExplore } from "react-icons/md";
@@ -18,10 +18,59 @@ import { FaUser } from "react-icons/fa6";
 import { IoMdNotifications } from "react-icons/io";
 import { useSelector } from "react-redux";
 import { RootState } from "../../redux/store";
+import { debounce } from "lodash";
+import toast from "react-hot-toast";
+import { searchUsersApi } from "../../services/user/api";
+import SearchedUsersList from "./SearchedUsersList";
+import { User } from "../../redux/slices/userSlice";
+import UploadOption from "./profile/UploadOption";
+import { IPost } from "../../Types/postTypes";
 
-const NavBar = () => {
+interface Props {
+  onNewPost: (post:IPost)=>void
+}
+const NavBar:React.FC<Props> = ({ onNewPost }) => {
   const [searchText, setSearchText] = useState<string>("");
-  const username = useSelector((state: RootState) => state.UserReducer.user?.user_name);
+  const user = useSelector((state:RootState)=> state.UserReducer.user)
+
+
+  const username = useSelector(
+    (state: RootState) => state.UserReducer.user?.user_name
+  );
+
+  const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isUploadOptionComponent, setIsUploadOptionComponent] = useState<boolean>(false);
+  
+  const debouncedSearch = debounce(async (query: string) => {
+    if(query.trim()){
+    try {
+      setIsLoading(true);
+    
+        const response = await searchUsersApi(query);
+        setSearchResults(response.data);
+    
+    } catch (err) {
+      console.log(err);
+      toast.error("something went wrong");
+    } finally {
+      setIsLoading(false);
+    }
+  }else{
+    setSearchResults([])
+  }
+  }, 500);
+
+  useEffect(()=>{
+   debouncedSearch(searchText)
+   return () => debouncedSearch.cancel()
+  },[searchText])
+  
+ const handleOnClose = ()=>{
+  setSearchResults([])
+  setSearchText("")
+ }
+
   return (
     <>
       <nav className="flex flex-row items-center justify-between w-screen dark:bg-background-dark lg:px-16 ">
@@ -53,74 +102,75 @@ const NavBar = () => {
         </div>
         <div className="flex lg:space-x-6 md:space-x-5">
           <div className="z-10 hidden lg:flex lg:space-x-6 md:space-x-5">
+            <div className="">
+              <NavLink
+                className={({ isActive }) =>
+                  `cursor-pointer font-golos p-2 px-4 rounded-full text-text-Grayish  ${
+                    isActive && "bg-black dark:bg-white"
+                  }`
+                }
+                to="/"
+              >
+                Home
+              </NavLink>
+            </div>
 
-          
-          <div className="">
-            <NavLink
-              className={({ isActive }) =>
-                `cursor-pointer font-golos p-2 px-4 rounded-full text-text-Grayish  ${
-                  isActive && "bg-black dark:bg-white"
-                }`
-              }
-              to="/"
-            >
-              Home
-            </NavLink>
-          </div>
+            <div>
+              <NavLink
+                className={({ isActive }) =>
+                  ` cursor-pointer font-golos p-2 px-4 rounded-full text-text-Grayish  ${
+                    isActive && "bg-black  dark:bg-white"
+                  }`
+                }
+                to="/chat"
+              >
+                Chat
+              </NavLink>
+            </div>
 
-          <div>
-            <NavLink
-              className={({ isActive }) =>
-                ` cursor-pointer font-golos p-2 px-4 rounded-full text-text-Grayish  ${
-                  isActive && "bg-black  dark:bg-white"
-                }`
-              }
-              to="/chat"
-            >
-              Chat
-            </NavLink>
-          </div>
+            <div>
+              <NavLink
+                className={({ isActive }) =>
+                  ` cursor-pointer font-golos p-2 px-4 rounded-full text-text-Grayish ${
+                    isActive && "bg-black   dark:bg-white"
+                  }`
+                }
+                to="/roll"
+              >
+                Roll
+              </NavLink>
+            </div>
 
+            <div>
+              <NavLink
+                className={({ isActive }) =>
+                  ` cursor-pointer font-golos p-2 px-4 rounded-full text-text-Grayish ${
+                    isActive && "bg-black   dark:bg-white"
+                  }`
+                }
+                to="/explore"
+              >
+                Explore
+              </NavLink>
+            </div>
 
-          <div>
-            <NavLink
-              className={({ isActive }) =>
-                ` cursor-pointer font-golos p-2 px-4 rounded-full text-text-Grayish ${
-                  isActive && "bg-black   dark:bg-white"
-                }`
-              }
-              to="/roll"
-            >
-              Roll
-            </NavLink>
-          </div>
+            <div>
+              <NavLink
+                className={({ isActive }) =>
+                  ` cursor-pointer font-golos p-2 px-4 rounded-full text-text-Grayish ${
+                    isActive && "bg-black  dark:bg-white"
+                  }`
+                }
+                to={`profile/${username}`}
+              >
+                Profile
+              </NavLink>
+            </div>
 
-          <div>
-            <NavLink
-              className={({ isActive }) =>
-                ` cursor-pointer font-golos p-2 px-4 rounded-full text-text-Grayish ${
-                  isActive && "bg-black   dark:bg-white"
-                }`
-              }
-              to="/explore"
-            >
-              Explore
-            </NavLink>
-          </div>
-
-          <div>
-            <NavLink
-              className={({ isActive }) =>
-                ` cursor-pointer font-golos p-2 px-4 rounded-full text-text-Grayish ${
-                  isActive && "bg-black  dark:bg-white"
-                }`
-              }
-              to={`profile/${username}`}
-            >
-              Profile
-            </NavLink>
-          </div>
-
+            <div onClick={() => setIsUploadOptionComponent(true)} className="px-4 rounded-full cursor-pointer p font-golos text-text-Grayish ">
+             upload
+            </div>
+            
           </div>
           <div>
             <NavLink
@@ -134,10 +184,7 @@ const NavBar = () => {
               <IoMdNotifications className="text-2xl " />
             </NavLink>
           </div>
-
-
         </div>
-       
 
         {/* mobile navbar */}
 
@@ -179,7 +226,7 @@ const NavBar = () => {
           </div>
 
           <div>
-            <PiPlusSquareBold className="text-3xl dark:text-text-Grayish" />
+            <PiPlusSquareBold onClick={() => setIsUploadOptionComponent(true)} className="text-3xl dark:text-text-Grayish" />
           </div>
 
           <div>
@@ -206,7 +253,22 @@ const NavBar = () => {
             </NavLink>
           </div>
         </div>
+        {
+         searchText  && <SearchedUsersList users={searchResults} onClose={handleOnClose} />
+        }
+        
       </nav>
+
+      {isUploadOptionComponent && (
+        <UploadOption
+          userId={user?.id || ""}
+          onClose={() => setIsUploadOptionComponent(false)}
+          setRefreshPosts={()=>{}}
+          refreshPosts={false}
+          onNewPost={onNewPost}
+        />
+      )}
+
     </>
   );
 };

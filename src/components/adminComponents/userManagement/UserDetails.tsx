@@ -7,7 +7,7 @@ import { IPost } from "../../../Types/postTypes"
 import { IoArrowBackOutline } from "react-icons/io5";
 
 interface props{
-  onClose : ()=> void
+  close : (boolean:boolean)=> void
   userId:string
 }
 const UserDetails:React.FC<props> = ({close,userId})=>{

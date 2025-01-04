@@ -12,6 +12,8 @@ import { Dispatch } from "@reduxjs/toolkit";
 import { addMessageApi, getMessagesApi } from "../../../services/user/api";
 import { FaArrowLeft } from "react-icons/fa6";
 import { IoVideocamOutline } from "react-icons/io5";
+import InputEmoji from "react-input-emoji";
+import { Stack, Button, Modal, Form } from "react-bootstrap";
 import dayjs from 'dayjs'
 
 type OutletContextType = {
@@ -26,7 +28,7 @@ type OutletContextType = {
 
 const Chat = () => {
   const opponentUserId = useParams().userId
-  const [messages, setMessages] = useState<Message[] | null>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState<string>("");
   const [isTyping, setIsTyping] = useState(false);
   console.log(
@@ -51,12 +53,56 @@ const Chat = () => {
   };
 
  
+  // Reset messages and fetch new messages on chat change
+
+  //hide it
+  // useEffect(() => {
+  //   if (chat?.id) {
+  //     console.log('request was reaching in there')
+  //     setMessages([]); // Reset messages
+  //     const fetchMessages = async () => {
+  //       try {
+  //         const { data } = await getMessagesApi(chat.id);
+  //         setMessages(data);
+  //       } catch (error) {
+  //         console.error("Error fetching messages:", error);
+  //       }
+  //     };
+  //     fetchMessages();
+  //   }
+  // }, [chat]);
 
   useEffect(() => {
-    if (receiveMessage !== null && receiveMessage.chatId === chat?.id) {
-      setMessages([...(messages || []), receiveMessage]);
-    }
-  }, [receiveMessage]);
+    const fetchMessages = async () => {
+      if (chat?.id) {
+        setMessages([]); // Reset messages to avoid showing old ones
+        try {
+          const { data } = await getMessagesApi(chat.id);
+          setMessages(data);
+        } catch (error) {
+          console.error("Error fetching messages:", error);
+        }
+      }
+    };
+  
+    fetchMessages();
+  }, [chat?.id]); // Dependency updated to re-fetch on chat change
+  
+  
+  //hide it 
+  // useEffect(() => {
+  //   if (receiveMessage !== null && receiveMessage.chatId === chat?.id) {
+  //     setMessages([...(messages || []), receiveMessage]);
+  //   }
+  // }, [receiveMessage]);
+
+  
+  useEffect(() => {
+  if (receiveMessage && receiveMessage.chatId === chat?.id) {
+    setMessages((prevMessages) => [...prevMessages, receiveMessage]);
+  }
+}, [receiveMessage, chat?.id]); // Depend on `chat?.id` to handle changes
+
   
     // fetch messages
     // useEffect(() => {
@@ -96,8 +142,10 @@ const Chat = () => {
           // send message to database
           try {
             const { data } = await addMessageApi(message)
-            setMessages([...(messages || []), data])
-            setNewMessage('');
+            // setMessages([...(messages || []), data])
+            // setNewMessage('');
+            setMessages((prevMessages) => [...prevMessages, data]);
+            setNewMessage("");
             setIsTyping(false);
           } catch (error) {
             console.log(error)
@@ -131,8 +179,10 @@ const Chat = () => {
       }
     }
   }, [opponentUser, chat, isOnline,opponentUserId]);
+
+ 
   return (
-    <div className="flex flex-col w-full h-full">
+    <div className="flex flex-col w-full h-full ">
       <div className="flex flex-row items-center w-full p-2 space-x-2 border border-text-charcoal">
         <FaArrowLeft onClick={()=> navigate('/chat')} className="flex lg:hidden"/>
         <div className="flex-shrink-0 w-12 h-12 overflow-hidden rounded-full ">
@@ -157,7 +207,7 @@ const Chat = () => {
 
      {/* message area */}
 
-     <div className="flex flex-col w-full h-screen overflow-y-auto lg:p-4 custom-scrollbar mb-14 ">
+     <div className="flex flex-col w-full h-screen overflow-y-auto lg:p-4 custom-scrollbar scrollbar-hide mb-14 ">
               {/* <div className="flex items-center justify-center w-full ">
                 <div className="flex flex-row items-center justify-center gap-2 p-1 rounded-full cursor-pointer bg-secondary bg-opacity-40 w-50">
                   <FaLock className="text-xs text-primary" />
@@ -219,6 +269,22 @@ const Chat = () => {
               }
             </div>
 {/* end message area */}
+
+
+{/* 
+<Stack direction="horizontal" gap={3} className="flex-grow-0 chat-input">
+        <InputEmoji
+          value={newMessage}
+          onChange={handleNewMessage}
+          fontFamily="nunito"
+          borderColor="rgba(72,112,223,0.2)"
+        />
+        <button className="send-btn"   onClick={() => handleSendMessage()}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-send" viewBox="0 0 16 16">
+  <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11ZM6.636 10.07l2.761 4.338L14.13 2.576zm6.787-8.201L1.591 6.602l4.339 2.76z"/>
+</svg>
+        </button>
+      </Stack> */}
 
 
       <div className="bottom-0 flex flex-row items-center w-full h-12 max-w-4xl gap-3 p-2 px-3 mt-auto mb-5 rounded-lg lg:mx-5 bg-background-charcoal">

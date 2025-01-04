@@ -58,3 +58,11 @@ export const unSuspendUserApi = async (userId:string|null)=>{
 export const getUserDetailsApi = async (userId:string)=>{
    return await API.get(`/userDetails/${userId}/`)
 }
+
+export const getReportedPostApi = async ()=>{
+  return await API.get(`/reportedPosts`)
+}
+
+export const getStackOfUsersApi = async (userIds:string[])=>{
+  return await API.post('/stackOfusers',{userIds})
+}

@@ -14,6 +14,14 @@ export const createPeerConnection = ()=>{
             // Emit the ICE candidate through your signaling server
         }
     }
+
+    peerConnection.onconnectionstatechange = () => {
+        console.log("PeerConnection state:", peerConnection.connectionState);
+        if (peerConnection.connectionState === "disconnected" || peerConnection.connectionState === "failed") {
+            // Handle disconnection or failure
+        }
+    };
+    
     return peerConnection;
 }
 

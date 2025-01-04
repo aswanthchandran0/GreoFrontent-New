@@ -3,16 +3,15 @@ import ChatList from "../components/userComponents/Chat/ChatList"
 import { Outlet, useNavigate, useParams } from "react-router-dom"
 import { useSelector } from "react-redux"
 import { RootState } from "../redux/store"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { User } from "../redux/slices/userSlice"
 import { IChat } from "../Types/userChats/chatType"
 import { createChatApi, getChatsApi, getUserByIdApi } from "../services/user/api"
-import { Message } from "yup"
 import { useSocket } from "../context/SocketContext"
 
 const ChatScreen = () =>{
   const { userId } = useParams();
-  const { socket, onlineUsers, sendMessage, receiveMessage } = useSocket(); // Access socket instance and online users from context
+  const { onlineUsers, sendMessage, receiveMessage } = useSocket(); // Access socket instance and online users from context
   const localUser = useSelector((state: RootState) => state.UserReducer.user);
 
   // State variables...
@@ -23,6 +22,7 @@ const ChatScreen = () =>{
 
   const navigate = useNavigate();
 
+  console.log("chat in chat screen",chats)
   // Fetch opponent user data
   useEffect(() => {
     if (userId) {
@@ -54,6 +54,7 @@ const ChatScreen = () =>{
     if (userId) {
       const { data } = await getUserByIdApi(userId);
       setSelectedUserData(data);
+      setOpponentUser(data);
     }
     navigate(`/chat/${chat.id}`);
   };
@@ -64,24 +65,25 @@ const ChatScreen = () =>{
   };
 
   // Check if chat exists, create one if not
-  const checkAndCreateChat = async () => {
-    if (!currentChat && userId) {
-      try {
-        const response = await createChatApi({
-          senderId: localUser?.id,
-          receiverId: userId,
-        });
-        setChats((prevChats) => [...prevChats, response.data]);
-        setCurrentChat(response.data);
-      } catch (error) {
-        console.error("Error creating chat:", error);
-      }
-    }
-  };
+  // const checkAndCreateChat = async () => {
+  //   if (!currentChat && userId) {
+  //     try {
+  //       const response = await createChatApi({
+  //         senderId: localUser?.id,
+  //         receiverId: userId,
+  //       });
+  //       setChats((prevChats) => [...prevChats, response.data]);
+  //       setCurrentChat(response.data);
+  //     } catch (error) {
+  //       console.error("Error creating chat:", error);
+  //     }
+  //   }
+  // };
 
-  useEffect(() => {
-    checkAndCreateChat();
-  }, [userId]);
+  // useEffect(() => {
+  //   checkAndCreateChat();
+  // }, [userId]);
+
 
 
 

@@ -11,6 +11,7 @@ import { updateUserData } from "../../../redux/slices/userSlice";
 import {debounce} from 'lodash'
 import { useNavigate } from "react-router-dom";
 import { User } from "../../../redux/slices/userSlice";
+import axios from "axios";
 const EditProfile = () => {
     const user = useSelector((state:RootState)=>state.UserReducer.user as User)
     const dispatch = useDispatch<AppDispatch>();
@@ -68,7 +69,8 @@ const EditProfile = () => {
           navigate(`/profile/${values.UserName}`);
       }catch(err){
         console.log('error',err)
-        toast.error(err?.response?.data?.error)
+        // toast.error(err?.response?.data?.error)
+        toast.error('something went wrong ')
       }
       }
     },
@@ -77,11 +79,12 @@ const EditProfile = () => {
   const checkUsernameAvailability = debounce(async (username) => {
     if(username){
     try{
-     const response  = await checkUsernameApi(username)
+     await checkUsernameApi(username)
+
       formik.setFieldError("UserName", ""); // Clear error if available
       setIsUsernameAvailable(true); 
-    }catch(err){
-      if (err.response && err.response.status === 409) {
+    }catch(err:unknown){
+      if (axios.isAxiosError(err) && err.response) {
         formik.setFieldError("UserName", "Username already exists");
         console.log('request was reaching in there')
         setIsUsernameAvailable(false);

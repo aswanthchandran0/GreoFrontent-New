@@ -7,11 +7,12 @@ import { useEffect, useState } from "react";
 import { profileDetailsFetchApi } from "../services/user/api";
 
 import { IPost } from "../Types/postTypes";
+import { User } from "../redux/slices/userSlice";
 
 const ProfileScreen = () => {
   const {username} = useParams()
   const user = useSelector((state:RootState)=>state.UserReducer.user)
-  const [profileUser,setProfileUser] = useState(null)
+  const [profileUser,setProfileUser] = useState<User | null>(null)
   const [followersCount,setFollowersCount] = useState(0)
   const [followingCount,setFollowingCount] = useState(0)
   const [isFollowing,setIsFollowing] = useState(false)
@@ -24,6 +25,7 @@ const ProfileScreen = () => {
             const response = await profileDetailsFetchApi(username?username:"");
             if(response.data.user) setProfileUser(response?.data?.user);
             if(response.data.isFollowing) setIsFollowing(response?.data?.isFollowing);
+            console.log('isfollowing in profile screen',response.data.isFollowing)
             setFollowersCount(response?.data?.followersCount);
             setFollowingCount(response?.data?.followingCount);
             setPostCount(response?.data?.posts.length);
@@ -31,6 +33,7 @@ const ProfileScreen = () => {
     }
     fetchProfileDetails();
 }, [username,refreshPosts])
+
 
 
 

@@ -5,18 +5,16 @@ import MenuItem from "@mui/joy/MenuItem";
 import { useEffect, useState } from "react";
 import UserPostCard from "./UserPostCard";
 import { IoMdAdd } from "react-icons/io";
-import FileInput from "../../ui/FileInput";
-import ImageCropper from "../../ui/ImageCropper";
-import UploadPost from "./UploadPost";
 import { useParams } from "react-router-dom";
-import { useSelector } from "react-redux";
-import { postUploadApi } from "../../../services/user/api";
-import { RootState } from "../../../redux/store";
 import { IPost } from "../../../Types/postTypes";
-import Comments from "../post/Comments";
-
+import UploadOption from "./UploadOption";
+import { getSavedItemApi, getUserRollApi } from "../../../services/user/api";
+import UserRollCard from "./userRollCard";
+import { SavedItem } from "../../../Types/savedItemTypes";
+import SavedItemCard from "./SavedItemCard";
 // Define types for props
 interface User {
+  id:string
   user_name: string;
   profileImage:string
 }
@@ -28,16 +26,31 @@ interface UserPostsProps {
   refreshPosts: boolean
 }
 
+export interface IRoll{
+  _id:string,
+  userId:string,
+  thumbnail:string,
+  mediaUrl: string,
+  content?: string,
+  createdAt:Date,
+  name?: string;
+  userName?:string
+  profileImage?: string; 
+  isLikedByViewingUser?:boolean
+  likeCount?:number
+  commentCount?:number
+  isSaved:boolean
+}
+
 const UserPosts: React.FC<UserPostsProps> = ({ user, posts,setRefreshPosts,refreshPosts }) => {
   const [selectedOption, setSelectedOption] = useState("Posts");
-  const [selectedFile, setSelectedFile] = useState<string | null>(null);
-  const [croppedImage, setCroppedImage] = useState<string | null>(null);
-  const [isCropping, setIsCropping] = useState<boolean>(false);
-  const userId = useSelector((state: RootState) => state.UserReducer.user?.id);
+  const [isUploadOptionComponent, setIsUploadOptionComponent] = useState<boolean>(false);
+  const [rolls,setRolls] = useState<IRoll[]>([])
+  // const userId = useSelector((state: RootState) => state.UserReducer.user?.id);
   const [userPosts, setUserPosts] = useState<IPost[]>([]);
+  const [savedItems, setSavedItems] = useState<SavedItem[]>([]); 
   const { username } = useParams();
-
-  console.log('profiel user in user post',user)
+ console.log("savedItems",savedItems)
   // for post update
   useEffect(() => {
     if (user && posts) {
@@ -52,68 +65,58 @@ const UserPosts: React.FC<UserPostsProps> = ({ user, posts,setRefreshPosts,refre
       // Use original posts if no user details
       setUserPosts(posts);
     }
-  }, [ posts]);
+  }, [ posts,user]);
 
   // for post or roll option change
   const handleOptionChange = (option: string) => {
     setSelectedOption(option);
   };
-
-  //file selecting
-  const onSelectedFile = (file: File | null) => {
-    if (file) {
-      setSelectedFile(file);
-      setIsCropping(true);
+ 
+// fetch user Roll 
+useEffect(()=>{
+  if(selectedOption == 'Roll'){
+    const fetchUserRoll = async()=>{
+      const response  = await getUserRollApi(user?.id??'')
+      setRolls(response.data)
     }
-  };
-
-  //file cropping
-  const onCropComplete = (croppedDataURL: string) => {
-    setCroppedImage(croppedDataURL);
-    setIsCropping(false);
-  };
-
-  const onCancelCrop = () => {
-    setCroppedImage(null);
-    setIsCropping(false);
-  };
-
-  // upload file
-  const onUploadFile = async (
-    file: File,
-    userId: string,
-    mediaType: string,
-    comment: string
-  ) => {
-    const formData = new FormData();
-    formData.append("files", file);
-    formData.append("userId", userId);
-    formData.append("mediaType", mediaType);
-    formData.append("comment", comment);
-    setSelectedFile("");
-    setCroppedImage(null);
-    try {
-   await postUploadApi(formData);
-      setRefreshPosts(!refreshPosts);
-    } catch (error) {
-      console.error("Error uploading post:", error);
-    }
-  };
-
-  const onCancelUpload = () => {
-    setCroppedImage(null);
-    setIsCropping(true);
-  };
+    fetchUserRoll()
+  } 
+},[selectedOption,user?.id])
 
 
+ // Fetch saved items when "Saved" is selected
+ useEffect(() => {
+  if (selectedOption === "Saved") {
+    const fetchSavedItems = async () => {
+      try {
+        const response = await getSavedItemApi(); // Update with your API
+        setSavedItems(response.data);
+      } catch (error) {
+        console.error("Error fetching saved items:", error);
+      }
+    };
+    fetchSavedItems();
+  }
+}, [selectedOption, user?.id]);
+
+
+const clearDeletePostCatch = (postId:string)=>{
+   setUserPosts((posts)=> posts.filter(post => post._id !== postId))
+}
+
+console.log('posts',posts)
+
+
+const handleUpdatePostCatch = (postId:string,content:string)=>{
+  setUserPosts((posts)=> posts.map((post)=> post._id == postId ?{...post,content:content}:post))
+}
   return (
     <div className="relative flex flex-col w-full">
       <div className="flex flex-row items-center justify-center space-x-3 md:justify-end ">
         {username === user?.user_name && (
-          <button className="relative flex flex-row items-center justify-center p-1 text-white border rounded-md hover:bg-white hover:text-text-Grayish ">
+          <button    onClick={() => setIsUploadOptionComponent(true)} className="relative flex flex-row items-center justify-center p-1 text-white border rounded-md hover:bg-white hover:text-text-Grayish ">
             <IoMdAdd className="text-md" />
-            <FileInput acceptType="both" onSelectedFile={onSelectedFile} />
-
+         
             <p className="text-md">upload</p>
           </button>
         )}
@@ -128,34 +131,51 @@ const UserPosts: React.FC<UserPostsProps> = ({ user, posts,setRefreshPosts,refre
               <MenuItem onClick={() => handleOptionChange("Roll")}>
                 Roll
               </MenuItem>
+              <MenuItem onClick={() => handleOptionChange("Saved")}>
+                Saved
+              </MenuItem>
             </Menu>
           </Dropdown>
         </div>
       </div>
 
       <div className="grid grid-cols-2 overflow-y-scroll scrollbar-hide">
-        {userPosts.map((post) => (
-          <UserPostCard key={post._id} post={post} />
+
+        {selectedOption =='Posts' && userPosts.map((post) => (
+          <UserPostCard key={post._id} post={post}  clearDeletePostCatch={clearDeletePostCatch} handleUpdatePostCatch={handleUpdatePostCatch}/>
         ))}
       </div>
-      {isCropping && (
-        <ImageCropper
-          image={selectedFile}
-          onCropDone={onCropComplete}
-          onCropCancel={onCancelCrop}
-          isAspectRatios={true}
+   
+      <div className="grid grid-cols-2 overflow-y-scroll scrollbar-hide">
+   {
+    selectedOption =='Roll' &&  rolls.map((roll)=>(
+      <UserRollCard roll={roll} />
+    ))
+   }
+
+{selectedOption === "Saved" &&
+    savedItems.map((savedItem, index) =>
+      savedItem.items.map((item, itemIndex) => (
+        <SavedItemCard
+          key={itemIndex}
+          item={{
+            type: item.type,
+            postData: item.type === "post" ? item.postData : undefined,
+            rollData: item.type === "roll" ? item.rollData : undefined,
+          }}
+        />
+      ))
+    )}
+
+   </div>
+{isUploadOptionComponent && (
+        <UploadOption
+          userId={user?.id || ""}
+          onClose={() => setIsUploadOptionComponent(false)}
+          setRefreshPosts={setRefreshPosts}
+          refreshPosts={refreshPosts}
         />
       )}
-
-      {croppedImage && (
-        <UploadPost
-          file={croppedImage}
-          onUploadFile={onUploadFile}
-          onCancelUpload={onCancelUpload}
-          userId={userId}
-        />
-      )}
-
 
     </div>
   );

@@ -2,7 +2,6 @@ import Modal from 'react-modal'
 import { suspendUserApi,unSuspendUserApi } from '../../../services/admin/adminApi';
 import React from 'react';
 import {toast} from 'react-hot-toast'
-import { tokenService } from '../../../services/user/tokenService';
 
 interface SuspendModalProps {
     isOpen: boolean;

@@ -8,7 +8,7 @@ export interface IUserDetails{
 export interface IComment{
   userId:string
   content:string
-  createAt?:Date
+  createdAt?:Date
   updateAt?:Date
   userDetails:IUserDetails
 }

@@ -1,5 +1,4 @@
-// App.jsx
-import React from "react";
+// App.jsx  
 import {
   createBrowserRouter,
   RouterProvider,
@@ -24,12 +23,13 @@ import EditProfile from "./components/userComponents/profile/EditProfile";
 import AdminAuth from "./pages/admin/AdminAuth";
 import AdminPannelScreen from "./pages/admin/AdminPannelScreen";
 import Auth from "./components/adminComponents/auth/Auth";
-import AdminSigninAuthProtector from "./components/userComponents/RouteProtect/admin/adminSignInAuthProtector";
 import AdminSignOutAuth from "./components/userComponents/RouteProtect/admin/adminSignOutAuthProtector";
 import Users from "./components/adminComponents/userManagement/Users";
-import UserDetails from "./components/adminComponents/userManagement/UserDetails";
 import Chat from "./components/userComponents/Chat/Chat";
 import VideoCall from "./components/userComponents/VideoCall/VideoCall";
+import Posts from "./components/adminComponents/postManagement/Posts";
+import ExploreScreen from "./pages/ExploreScreen";
+import ShareScreen from "./pages/ShareScreen";
 
 const router = createBrowserRouter([
   {
@@ -72,7 +72,12 @@ const router = createBrowserRouter([
           },
           {
             path: "explore",
+            element:<ExploreScreen/>
           },
+          {
+            path:"p/:postId",
+            element:<ShareScreen/>
+          }
         ],
       },
     ],
@@ -143,6 +148,10 @@ const router = createBrowserRouter([
          path:"users",
         element:<Users/>,
       },
+      {
+        path:"posts",
+        element:<Posts/>
+      }
     ]
 
   }

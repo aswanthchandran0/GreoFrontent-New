@@ -20,7 +20,6 @@ export const adminAuthenticate = createAsyncThunk(
         return response.data.admin
      }catch(error){
         toast.error("invalid credential")
-        console.log('Caught error:', error.response?.data || error.message);
         if (axios.isAxiosError(error))
             thunkAPI.rejectWithValue(error.response?.data?.error);
           else return thunkAPI.rejectWithValue("Something went wrong");
