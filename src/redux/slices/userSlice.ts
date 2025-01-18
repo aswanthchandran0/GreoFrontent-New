@@ -108,6 +108,9 @@ export interface User {
   private_account: boolean;
   publicKey?: string;
   otherUser?:boolean
+  socketId?:string
+  createdAt?:string
+  followersCount?:number
 }
 
 interface UserAuthState {

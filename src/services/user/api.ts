@@ -93,7 +93,7 @@ export const forgotPasswordTokenGenerateAPI = async (email: string) => {
 }
 
 export const updatePasswordApi = async (token:string,password:string) => {
-  return await API.post('/update_password', { token, password })
+  return await API.patch('/update_password', { token, password })
 }
 
 export const resentOtpApi = async (email:string) => {
@@ -105,7 +105,7 @@ export const profileDetailsFetchApi = async (username:string) => {
 }
 
 export const updateProfileApi = async (data)=>{
-  return await API.post('/update_profile', data)  
+  return await API.patch('/update_profile', data)  
 }
 
 export const checkUsernameApi = async (username:string)=>{
@@ -255,4 +255,24 @@ export const deleteSavedItemApi = async(itemId:string,type:string)=>{
 
 export const getSavedItemApi = async()=>{
   return await API.get('/saveItem')
+}
+
+export const saveNotification = async(userId:string,entityId:string,mediaUrl:string,message:string,type:string)=>{
+   return await API.post("/notification",{userId,entityId,mediaUrl,message,type})
+}
+
+export const deleteNotification = async(entityId:string,userId:string,type:string)=>{
+  return await API.delete("/notification",{data: { entityId, userId,type },})
+}
+
+export const getUserNotificationApi = async()=>{
+  return await API.get("/notification")
+}
+
+export const NotificationUpdatingApi = async()=>{
+  return await API.patch("/notification")
+}
+
+export const deleteRollApi = async(rollId:string)=>{
+  return await API.delete(`/roll/${rollId}`)
 }

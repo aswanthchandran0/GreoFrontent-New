@@ -1,15 +1,20 @@
 import { useEffect, useState } from "react";
 import { getReportedPostApi } from "../../../services/admin/adminApi";
 import { DEFAULT_PROFILE_IMAGE } from "../../../assets/images";
-import UserDetails from "../userManagement/UserDetails";
 import PostDetails from "./PostDetails";
+import { IPost } from "../../../Types/postTypes";
+import BlockModal from "./BlockModal";
 
 
 const Posts = ()=>{
 
-    const [reportedPosts,setReportedPosts] = useState([])
+    const [reportedPosts,setReportedPosts] = useState<IPost[]>([])
     const [isPostView,setIsPostView] = useState(false)
     const [viewPost,setViewPost] = useState()
+    const [isBlockModal,setIsBlockModal] = useState(false)
+    const [selectedPostId, setSelectedPostId] = useState<string>('');
+   const [selectedAction, setSelectedAction] = useState<boolean>(false);
+  
   useEffect(()=>{
     const fetchReportedPosts = async()=>{
         const response = await getReportedPostApi()
@@ -18,6 +23,7 @@ const Posts = ()=>{
     fetchReportedPosts()
   },[])
 
+  console.log("reported posts",reportedPosts)
   
   const handlePostView = (post,user,likeCount,commentCount,userId,users)=>{
     // const Count = [...new Set(users.map(user =>user.userId))]
@@ -35,7 +41,18 @@ const Posts = ()=>{
        setIsPostView(true)
       console.log('request was reaching inside the handle post')
   }
-  
+
+   const handleIsBlockModal = (postId:string,action:boolean)=>{
+     setSelectedPostId(postId)
+     setSelectedAction(action)
+     setIsBlockModal(!isBlockModal)
+   }
+ 
+   
+
+   useEffect(()=>{
+    console.log('reported posts',reportedPosts)
+   },[reportedPosts])
     return(
         <div className="flex flex-col items-center m-4">
      <div className="flex items-center w-full p-2 bg-indigo-500 rounded">
@@ -90,9 +107,18 @@ const Posts = ()=>{
                   </button>
                 </td>
                 <td className="px-4 py-2 text-center">
-                  <button className="px-4 py-2 text-white bg-red-500 rounded hover:bg-red-600">
-                    Delete
-                  </button>
+                  
+                <button
+                      onClick={()=>handleIsBlockModal(post.postId,!post.postDetails.isBlocked)}
+                      className={`px-4 py-2 text-white rounded ${
+                        post.postDetails.isBlocked
+                          ? "bg-green-500 hover:bg-green-600"
+                          : "bg-red-500 hover:bg-red-600"
+                      }`}
+                    >
+                      {post.postDetails.isBlocked ? "Unblock" : "Block"}
+                    </button>
+
                 </td>
               </tr>
             ))}
@@ -100,6 +126,10 @@ const Posts = ()=>{
         </table>
       </div>
 
+     }
+
+     {
+      isBlockModal && <BlockModal isOpen={isBlockModal} onClose={()=>setIsBlockModal(false)}  setReportedPosts={setReportedPosts} postId={selectedPostId} action={selectedAction} />
      }
     
         </div>

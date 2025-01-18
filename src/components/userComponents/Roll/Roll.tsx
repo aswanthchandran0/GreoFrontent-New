@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import RollCard from "./RollCard";
-import { latestRollApi, likeRollApi } from "../../../services/user/api";
+import { deleteNotification, latestRollApi, likeRollApi, saveNotification } from "../../../services/user/api";
 import { ClipLoader } from "react-spinners";
 import { IRoll } from "../profile/UserPosts";
 
@@ -55,59 +55,7 @@ const Roll = () => {
     ) {
       fetchRolls();
     }
-  };
-
-
-
-   // Toggle like status for a roll
-   const handleLikeToggle = (rollId: string) => {
-    const isCurrentlyLiked = likedRolls.has(rollId);
-    const updatedLikedRolls = new Set(likedRolls);
-    const updatedUnlikedRolls = new Set(unlikedRolls);
-
-    if (isCurrentlyLiked) {
-      updatedLikedRolls.delete(rollId);
-      updatedUnlikedRolls.add(rollId);
-    } else {
-      updatedLikedRolls.add(rollId);
-      updatedUnlikedRolls.delete(rollId);
-    }
-
-    setLikedRolls(updatedLikedRolls);
-    setUnlikedRolls(updatedUnlikedRolls);
-
-    setRolls((prevRolls) =>
-      prevRolls.map((roll) =>
-        roll._id === rollId
-          ? {
-              ...roll,
-              isLikedByViewingUser: !isCurrentlyLiked,
-              likeCount: isCurrentlyLiked ? roll.likeCount - 1 : roll.likeCount + 1,
-            }
-          : roll
-      )
-    );
-  };
-
-  // Sync likes/unlikes with backend
-  useEffect(() => {
-    const syncLikesWithBackend = async () => {
-      try {
-        await likeRollApi(Array.from(likedRolls), Array.from(unlikedRolls));
-      } catch (err) {
-        console.error("Error syncing likes with backend:", err);
-      }
-    };
-
-    window.addEventListener("beforeunload", syncLikesWithBackend);
-    return () => {
-      syncLikesWithBackend();
-      window.removeEventListener("beforeunload", syncLikesWithBackend);
-    };
-  }, [likedRolls, unlikedRolls]);
-
-
-
+  }
 
   // fetch initial rolls
   useEffect(() => {
@@ -133,7 +81,6 @@ const Roll = () => {
             roll={roll}
             isAudioOn={isAudioOn}
             handleIsAudioOn={handleIsAudioOn}
-            onLikeToggle={() => handleLikeToggle(roll._id)}
             setRolls={setRolls}
           />
         ))}

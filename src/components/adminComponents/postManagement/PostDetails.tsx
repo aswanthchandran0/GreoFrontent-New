@@ -12,7 +12,7 @@ const PostDetails = ({data})=>{
    const [loading, setLoading] = useState(true);
    const [selectedUserId, setSelectedUserId] = useState(null);
     
-
+ console.log('data',data)
 
   useEffect(() => {
     const fetchUserDetails = async () => {

@@ -9,7 +9,7 @@ interface Props{
 
 const SearchedUsersList:React.FC<Props> = ({users,onClose})=>{
     return(
-        <div className="fixed inset-0 z-50 flex flex-col items-center rounded-md bg-background-customDarkGray top-16 md:top-20 md:left-8 md:h-96 md:w-96">
+        <div className="fixed inset-0 z-50 flex flex-col items-center rounded-md shadow-md bg-background-light dark:bg-background-customDarkGray top-16 md:top-20 md:left-8 md:h-96 md:w-96">
             
             <div className="relative flex flex-row items-center w-full p-2">
   <span className="absolute text-lg transform -translate-x-1/2 left-1/2 text-text-white font-outfit">Users</span>

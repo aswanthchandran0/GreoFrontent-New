@@ -12,7 +12,7 @@ export const LoaderSpinner:React.FC<LoaderSpinnerProps> = ({loading,color='#3B82
         <>
         {
             loading && (
-             <div className="absolute flex items-center justify-center w-full h-full bg-opacity-50 bg-background-dark">
+             <div className="absolute flex items-center justify-center w-full h-full bg-opacity-50 bg-background-light dark:bg-background-dark">
                 <ClipLoader color={color} loading={loading} size={size}/>
              </div>   
             )

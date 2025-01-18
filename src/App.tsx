@@ -30,6 +30,8 @@ import VideoCall from "./components/userComponents/VideoCall/VideoCall";
 import Posts from "./components/adminComponents/postManagement/Posts";
 import ExploreScreen from "./pages/ExploreScreen";
 import ShareScreen from "./pages/ShareScreen";
+import Dashboard from "./components/adminComponents/Dashboard/Dashboard";
+import Notification from "./pages/Notification";
 
 const router = createBrowserRouter([
   {
@@ -62,9 +64,6 @@ const router = createBrowserRouter([
                 element: <EditProfile />,
               },
             ],
-          },
-          {
-            path: "notification",
           },
           {
             path: "roll",
@@ -145,13 +144,18 @@ const router = createBrowserRouter([
     element:<AdminPannelScreen/>,
     children:[
       {
+        path: '', // Default route for /admin
+        element: <Dashboard />, // Dashboard component
+      },
+      {
          path:"users",
         element:<Users/>,
       },
       {
         path:"posts",
         element:<Posts/>
-      }
+      },
+
     ]
 
   }

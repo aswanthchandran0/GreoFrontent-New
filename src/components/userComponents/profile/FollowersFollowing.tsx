@@ -79,17 +79,17 @@ const Followers:React.FC<FollowersProps> =  ({showComponent,onClose}) =>{
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center w-full h-full pt-12 bg-transparent pb-14">
         <div className="flex flex-col items-center justify-center w-full h-screen bg-opacity-50 bg-background-dark">
-          <div className="flex flex-col w-full items-center h-full max-w-md max-h-[70vh] rounded-md bg-background-customDarkGray ">
+          <div className="flex flex-col w-full items-center h-full max-w-md max-h-[70vh] rounded-md bg-background-light dark:bg-background-customDarkGray ">
             <div className="relative flex flex-row items-center justify-center w-full p-3 border-b border-text-charcoal">
-                <p className="absolute cursor-pointer text-text-white font-outfit">{showComponent}</p>
-                <IoCloseOutline onClick={onClose} className="flex ml-auto text-2xl font-bold cursor-pointer text-text-white"/>
+                <p className="absolute font-semibold cursor-pointer text-text-black font-outfit dark:text-text-white">{showComponent}</p>
+                <IoCloseOutline onClick={onClose} className="flex ml-auto text-2xl font-bold cursor-pointer dark:text-text-white"/>
             </div>
 
             <div className="items-center justify-center w-full p-2 ">
-                <div className="flex flex-row p-2 overflow-hidden rounded-md h-9 bg-background-charcoal">
-                <input value={searchValue} onChange={(e)=>setSearchValue(e.target.value)} type="text" className="flex w-full h-full bg-transparent focus:outline-none text-text-white" placeholder="search" />
+                <div className="flex flex-row p-2 overflow-hidden rounded-md h-9 bg-background-lightGray dark:bg-background-charcoal">
+                <input value={searchValue} onChange={(e)=>setSearchValue(e.target.value)} type="text" className="flex w-full h-full bg-transparent focus:outline-none text-text-black font-golos dark:text-text-white" placeholder="search" />
                {
-                isSearchValue &&  <IoCloseOutline onClick={handleClearSearchFieldValue} className="cursor-pointer text-md text-text-white"/>
+                isSearchValue &&  <IoCloseOutline onClick={handleClearSearchFieldValue} className="cursor-pointer text-md text-text-black dark:text-text-white"/>
                }
                 </div>
                    </div>

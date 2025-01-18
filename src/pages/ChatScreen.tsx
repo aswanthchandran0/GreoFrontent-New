@@ -19,10 +19,10 @@ const ChatScreen = () =>{
   const [chats, setChats] = useState<IChat[]>([]);
   const [currentChat, setCurrentChat] = useState<IChat | null>(null);
   const [selectedUserData, setSelectedUserData] = useState<User | null>(null);
-
+  const [latestSendedMessage,setLatestSendedMessage] = useState<IChat | null>(null)
+  
   const navigate = useNavigate();
 
-  console.log("chat in chat screen",chats)
   // Fetch opponent user data
   useEffect(() => {
     if (userId) {
@@ -49,6 +49,7 @@ const ChatScreen = () =>{
 
   // Handle conversation click
   const handleConversationClick = async (chat: IChat) => {
+    console.log("handle conversation clicking")
     setCurrentChat(chat);
     const userId = chat.members.find((id) => id !== localUser?.id);
     if (userId) {
@@ -56,9 +57,8 @@ const ChatScreen = () =>{
       setSelectedUserData(data);
       setOpponentUser(data);
     }
-    navigate(`/chat/${chat.id}`);
+    // navigate(`/chat/${chat.id}`);
   };
-
   // Check if user is online
   const isUserOnline = (userId: string) => {
     return onlineUsers.some((user) => user.userId === userId);
@@ -85,13 +85,18 @@ const ChatScreen = () =>{
   }, [userId]);
 
 
+  const onNewMessage = (data:IChat) => {
+    setLatestSendedMessage(data)
+  };
+  
+
 
 
     return(
        <div className="flex justify-center h-full dark:bg-background-dark bg-background-light dark:text-text-white md:max-h-[90vh] max-h-[83vh] lg:px-16   p-2">
      
      <div  className={`${userId?'lg:flex hidden':'flex'} flex-col w-full max-w-[397.20px] h-full  border border-text-charcoal `}>
-         <ChatList data={chats} currentUserId={localUser?.id || null}  onConversationClick={handleConversationClick}/>
+         <ChatList data={chats} currentUserId={localUser?.id || null}  onConversationClick={handleConversationClick} latestSendedMessage={latestSendedMessage}/>
    </div>
          <div className={` ${userId?'flex':'lg:flex hidden'} items-center justify-center w-full lg:flex`}>
        
@@ -106,6 +111,7 @@ const ChatScreen = () =>{
    setSendMessage:sendMessage,
    receiveMessage,
    isOnline: isUserOnline(opponentUser?.id || ""),
+   onNewMessage
  }}/>
 :
          

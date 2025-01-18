@@ -33,24 +33,24 @@ const SharingOption:React.FC<Props> =  ({postId,onClose}) => {
   return (
     <div onClick={onClose} className="fixed inset-0 z-50 flex items-center justify-center w-full h-full pt-12 bg-transparent pb-14">
       <div className="flex flex-col items-center justify-center w-full h-screen bg-opacity-50 bg-background-dark">
-        <div onClick={(e)=> e.stopPropagation()}  className="flex flex-col w-full items-center h-full max-w-md max-h-[50vh] rounded-md bg-background-customDarkGray ">
+        <div onClick={(e)=> e.stopPropagation()}  className="flex flex-col w-full items-center h-full max-w-md max-h-[50vh] rounded-md bg-background-light dark:bg-background-customDarkGray ">
             <div className="relative flex flex-row items-center justify-center w-full p-3 border-b border-text-charcoal">
-                           <p className="absolute cursor-pointer text-text-white font-outfit">share</p>
-                           <IoCloseOutline onClick={onClose} className="flex ml-auto text-2xl font-bold cursor-pointer text-text-white"/>
+                           <p className="absolute font-bold cursor-pointer text-text-black dark:text-text-white font-outfit">share</p>
+                           <IoCloseOutline onClick={onClose} className="flex ml-auto text-2xl font-bold cursor-pointer text-text-black dark:text-text-white"/>
 
                        </div>
 
                        <div className="flex flex-row items-center w-full p-2 mt-auto space-x-4 border-t border-background-charcoal">
                        
                        <div onClick={handleCopyLink} className="flex flex-col items-center gap-1">
-                       <div className="flex items-center justify-center w-12 h-12 p-2 rounded-full cursor-pointer bg-background-dark ">
+                       <div className="flex items-center justify-center w-12 h-12 p-2 rounded-full cursor-pointer bg-background-Grayish dark:bg-background-dark ">
                        <BiLinkAlt  className="text-2xl text-text-white " />
                        </div>
                        <span className="text-xs cursor-pointer font-golos text-text-white ">Copy link</span>
                        </div>
 
                        <div onClick={handleWhatsAppShare}  className="flex flex-col items-center gap-1">
-                       <div className="flex items-center justify-center w-12 h-12 p-2 rounded-full cursor-pointer bg-background-dark ">
+                       <div className="flex items-center justify-center w-12 h-12 p-2 rounded-full cursor-pointer bg-background-Grayish dark:bg-background-dark ">
                        <FaWhatsapp  className="text-2xl text-text-white " />
                        </div>
                        <span className="text-xs cursor-pointer font-golos text-text-white ">Whatsapp</span>

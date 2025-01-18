@@ -12,7 +12,8 @@ const MainLayout = () => {
   const [newPosts, setNewPosts] = useState<IPost | null>(null);
   const user = useSelector((state:RootState)=>state.UserReducer.user)
   const navigate = useNavigate(); // This is inside the router context
-   const {incomingCall} = useCall()
+  const isDarkMode = useSelector((state: RootState) => state.preferences.darkMode);
+   const {receivingCall} = useCall()
    
   useEffect(() => {
     setNavigateFunction(navigate); // Set the navigate function globally if necessary
@@ -24,7 +25,7 @@ const MainLayout = () => {
       ...newPost,  // Spread the existing newPost data
       profileImage: user?.profileImage,  // Add the profile image from the user state
       name:user?.name,
-      isLiked:'',
+      isLiked:false,
       likeCount:0,
       commentCount:0,
       user_name: user?.user_name,  // Add the username from the user state
@@ -32,17 +33,25 @@ const MainLayout = () => {
     setNewPosts(newPostWithUserDetails);
   };
 
-  console.log("new posts",{
-    newPosts
-    
-  })
+
+
+  // dark mode 
+  useEffect(() => {
+    // Sync the dark mode state with the DOM
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [isDarkMode]); 
+
 
   return (
     <>
       <div className="relative w-screen h-screen bg-background-light dark:bg-background-dark">
 
         {
-          incomingCall && <IncomingCallModal/>
+          receivingCall && <IncomingCallModal/>
         //  <IncomingCallModal/>
         }
         <NavBar onNewPost={handleNewPost} />

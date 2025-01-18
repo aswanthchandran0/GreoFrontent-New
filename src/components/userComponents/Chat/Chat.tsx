@@ -24,6 +24,7 @@ type OutletContextType = {
   setSendMessage: Dispatch<SetStateAction<any>>; // Adjust `any` if you know the type of messages being sent
   receiveMessage: Message | null;
   isOnline: boolean;
+  onNewMessage:(data:string)=>void
 };
 
 const Chat = () => {
@@ -31,9 +32,9 @@ const Chat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState<string>("");
   const [isTyping, setIsTyping] = useState(false);
-  console.log(
-    'messages in the message page',messages
-  )
+  // console.log(
+  //   'messages in the message page',messages
+  // )
   const navigate = useNavigate()
   const {
       opponentUser,
@@ -42,7 +43,8 @@ const Chat = () => {
     userData,
     setSendMessage,
     receiveMessage,
-    isOnline
+    isOnline,
+    onNewMessage,
   }: OutletContextType = useOutletContext();
   const scroll = useRef<HTMLDivElement | null>(null);
 
@@ -100,6 +102,7 @@ const Chat = () => {
   useEffect(() => {
   if (receiveMessage && receiveMessage.chatId === chat?.id) {
     setMessages((prevMessages) => [...prevMessages, receiveMessage]);
+    console.log('receivedMessage in chat ',receiveMessage)
   }
 }, [receiveMessage, chat?.id]); // Depend on `chat?.id` to handle changes
 
@@ -145,6 +148,11 @@ const Chat = () => {
             // setMessages([...(messages || []), data])
             // setNewMessage('');
             setMessages((prevMessages) => [...prevMessages, data]);
+           
+            if(chat){
+              onNewMessage(data)
+            }
+            console.log("sended message",data)
             setNewMessage("");
             setIsTyping(false);
           } catch (error) {
@@ -169,7 +177,7 @@ const Chat = () => {
 
   useEffect(() => {
     if (opponentUser || chat || isOnline) {
-      console.log("Context data updated:", { opponentUser, chat, isOnline });
+      // console.log("Context data updated:", { opponentUser, chat, isOnline });
       if (chat) {
         const fetchMessages = async () => {
           const { data } = await getMessagesApi(chat.id);
@@ -194,7 +202,7 @@ const Chat = () => {
         </div>
 
         <div className="flex flex-col ">
-          <span className="mb-[-4px] font-golos ">{opponentUser?.name}</span>
+          <span onClick={()=>navigate(`/profile/${opponentUser?.user_name}`)} className="mb-[-4px] font-golos cursor-pointer ">{opponentUser?.name}</span>
           <p className={`text-sm font-light font-outfit  ${isOnline? 'text-green-500':'text-text-Grayish'}`}>
           {isOnline ? "Active" : "Offline"}
           </p>
@@ -207,7 +215,7 @@ const Chat = () => {
 
      {/* message area */}
 
-     <div className="flex flex-col w-full h-screen overflow-y-auto lg:p-4 custom-scrollbar scrollbar-hide mb-14 ">
+     <div className="flex flex-col w-full h-screen overflow-y-auto lg:p-4 scrollbar-hide mb-14 ">
               {/* <div className="flex items-center justify-center w-full ">
                 <div className="flex flex-row items-center justify-center gap-2 p-1 rounded-full cursor-pointer bg-secondary bg-opacity-40 w-50">
                   <FaLock className="text-xs text-primary" />
@@ -287,7 +295,7 @@ const Chat = () => {
       </Stack> */}
 
 
-      <div className="bottom-0 flex flex-row items-center w-full h-12 max-w-4xl gap-3 p-2 px-3 mt-auto mb-5 rounded-lg lg:mx-5 bg-background-charcoal">
+      <div className="bottom-0 flex flex-row items-center w-full h-12 max-w-4xl gap-3 p-2 px-3 mt-auto mb-5 border rounded-lg dark:border-none lg:mx-5 bg-background-light dark:bg-background-charcoal">
         <BsEmojiSmile className="w-6 h-6 cursor-pointer text-text_white" />
         <input
           value={newMessage}

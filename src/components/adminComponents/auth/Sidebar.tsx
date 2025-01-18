@@ -9,11 +9,8 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 const menuConfig = [
   { name: 'Dashboard', to:"" },
-  // { name: 'Community', to:"" },
   { name: 'Post', to:"posts" },
-  // { name: 'Transaction', to:"" },
   { name: 'Users', to:"/admin/users" },
-  { name: 'Notification', to:"" }
 ]
 
 const Sidebar: React.FC = () => {

@@ -66,3 +66,17 @@ export const getReportedPostApi = async ()=>{
 export const getStackOfUsersApi = async (userIds:string[])=>{
   return await API.post('/stackOfusers',{userIds})
 }
+
+
+export const getTop10Users = async ()=>{
+  return await API.get("top10Users")
+}
+
+export const getAllRollsAndPostsApi = async()=>{
+  return await API.get("rollsAndPosts")
+}
+
+export const blockUserPost = async (postId:string,action:boolean)=>{
+
+  return await API.patch("users",{postId,action})
+}

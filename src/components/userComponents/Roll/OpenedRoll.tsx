@@ -9,7 +9,7 @@ import { IoBookmarkOutline } from "react-icons/io5";
 import { useEffect, useState } from "react";
 import { commentSentAPi, getCommentsApi, rollCommentSentAPi, rollGetCommentsApi } from "../../../services/user/api";
 import { CommentsDto, sendComment } from "../../../Types/commentTypes";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/store";
 import { DEFAULT_PROFILE_IMAGE } from "../../../assets/images";
@@ -17,6 +17,8 @@ import { HiSpeakerWave } from "react-icons/hi2";
 import { HiSpeakerXMark } from "react-icons/hi2";
 import { IRoll } from "../profile/UserPosts";
 import Comment from "../post/Comment";
+import { BsThreeDots } from "react-icons/bs";
+import RollMenu from "./RollMenu";
  
 
 interface OpenedRollProps {
@@ -38,6 +40,10 @@ const OpenedRoll: React.FC<OpenedRollProps> = ({roll,onClose}) =>
    const [commentsCount,setCommentsCount] = useState(0)
    const [isPlaying, setIsPlaying] = useState<boolean>(false);
    const [isAudioOn,setIsAudioOn] = useState<boolean>(true)
+   const loggedUser = useSelector((state: RootState) => state.UserReducer.user);
+   const { username } = useParams();
+   const [isRollMenu, setIsRollMenu] = useState<boolean>(false);
+
   useEffect(()=>{
     try{
      const fetchComments = async()=>{
@@ -102,11 +108,11 @@ const OpenedRoll: React.FC<OpenedRollProps> = ({roll,onClose}) =>
     className="fixed inset-0 z-20 flex items-center justify-center w-full h-full py-5 bg-opacity-50 bg-background-dark"
   >
     <div
-      className="flex flex-row w-full h-full max-w-4xl bg-background-dark "
+      className="flex flex-row w-full h-full max-w-4xl bg-background-light dark:bg-background-dark "
       onClick={(e) => e.stopPropagation()}
     >
       {/* post side  */}
-      <div className="relative flex items-center justify-center hidden w-2/5 h-full border-r cursor-pointer md:flex border-text-charcoal ">
+      <div className="relative flex items-center justify-center hidden w-2/5 h-full border-r cursor-pointer bg-background-dark md:flex border-text-charcoal ">
         <div  onClick={handlePlayPause}>
         <video
               id="rollVideo"
@@ -134,14 +140,18 @@ const OpenedRoll: React.FC<OpenedRollProps> = ({roll,onClose}) =>
           <div className="w-12 h-12 overflow-hidden rounded-full">
             <img  className="object-cover w-full h-full cursor-pointer" src={roll.profileImage || DEFAULT_PROFILE_IMAGE} alt="" />
           </div>
-          <span onClick={handleProfileNavigation} className="cursor-pointer text-text-white">
+          <span onClick={handleProfileNavigation} className="font-bold cursor-pointer text-text-black font-golos dark:text-text-white">
             {roll.userName}
           </span>
+          <div className="flex flex-row ml-auto space-x-3 text-xl font-semibold cursor-pointer text-text-black dark:text-text-white">
+            {/* {loggedUser?.user_name === username && (
+                          <BsThreeDots onClick={() => setIsRollMenu(true)} />
+                        )} */}
           <IoClose
             onClick={onClose}
-            className="ml-auto text-xl cursor-pointer text-text-white" />
+            className="ml-auto text-xl cursor-pointer text-text-black dark:text-text-white" />
         </div>
-
+        </div>
         {/* comment box */}
 
         <div className="w-full h-full p-2 space-y-5 overflow-y-auto scrollbar-hide ">
@@ -199,7 +209,7 @@ const OpenedRoll: React.FC<OpenedRollProps> = ({roll,onClose}) =>
               value={comment}
               onChange={(e)=> setComment(e.target.value)}
               onKeyDown={(e)=> e.key === 'Enter' && handleCommentPost()}
-               className="p-2 outline-none w-96 bg-background-dark text-text-white "
+               className="p-2 outline-none w-96 bg-background-light dark:bg-background-dark text-text-black dark:text-text-white "
               type="text"
               placeholder="Add a comment..." />
             <p  onClick={handleCommentPost} className="text-blue-500 cursor-pointer font-golos">post</p>
@@ -208,6 +218,9 @@ const OpenedRoll: React.FC<OpenedRollProps> = ({roll,onClose}) =>
       </div>
       {/* comment side end */}
     </div>
+    {
+      isRollMenu && <RollMenu onClose={()=>setIsRollMenu(false)} />
+    }
   </div>
 );
 

@@ -13,27 +13,33 @@ import { BsThreeDots } from "react-icons/bs";
 import PostMenu from "./PostMenu";
 import LikedUsers from "./LikedUsers";
 import SharingOption from "./SharingOption";
-import { deleteSavedItemApi, saveItemApi } from "../../../services/user/api";
+import { deleteNotification, deleteSavedItemApi, likePostApi, saveItemApi, saveNotification } from "../../../services/user/api";
 import toast from "react-hot-toast";
 import { SavedItemArrayElement } from "../../../Types/savedItemTypes";
+import { useSocket } from "../../../context/SocketContext";
+import { useSelector } from "react-redux";
+import { RootState } from "../../../redux/store";
 
 
 const defaultProfileImage = 'https://img.freepik.com/free-vector/businessman-character-avatar-isolated_24877-60111.jpg?t=st=1729611509~exp=1729615109~hmac=f56084f44329d588f81849bc897a8533f197f38f12e1fd5d08aca16c67adffb4&w=740'
 interface PostCardProps {
   post: IPost;
   isLiked: boolean;
-  onLikeToggle: () => void;
   id?: string;
   setPosts: React.Dispatch<React.SetStateAction<IPost[]>>;
 }
 
 
-const PostCard: React.FC<PostCardProps> = ({ post, isLiked, onLikeToggle ,id,setPosts}) => {
+const PostCard: React.FC<PostCardProps> = ({ post, isLiked,id,setPosts}) => {
   const [isCommentBoxOpen, setIsCommentBoxOpen] = useState(false);
   const [isPostMenu,setIsPostMenu] = useState<boolean>(false)
   const [isLikedUsersList,setIsLikedUsersList] = useState<boolean>(false)
   const [isSharing,setIsSharing] = useState<boolean>(false)
+  const [localIsLiked, setLocalIsLiked] = useState<boolean>(isLiked);
+  const [loading,setLoading] = useState<boolean>(false)
   const navigate = useNavigate()
+  const {socket} = useSocket()
+  const myId = useSelector((state:RootState)=> state.UserReducer.user?.id)
   // handle comment box open or close
   const handleCommentBox = ()=>{
     setIsCommentBoxOpen(!isCommentBoxOpen)
@@ -96,7 +102,72 @@ const handleUnsavePost = async (itemId: string) => {
 };
 
 
-console.log("is liked ",isLiked)
+// onlike toggle  
+const onLikeToggle = async () => {
+  try {
+    setLoading(true)
+    let response;
+    if (localIsLiked) {
+      // If the post is currently liked, call the API to unlike
+      response = await likePostApi([], [post._id]);
+      if (response.status === 200) {
+        setLocalIsLiked(false);
+        setPosts((prevPosts) =>
+          prevPosts.map((p) =>
+            p._id === post._id
+              ? { ...p, isLiked: false, likeCount: p.likeCount - 1 }
+              : p
+          )
+        );
+
+              
+        // removing the notification when user unlike the post
+        const notificationResponse = await deleteNotification(post._id,post.userId,'post')
+        if(notificationResponse.data ==true){
+          const notificationData = {
+            userId:post.userId,
+            entityId:post._id,
+            initiatorId:myId,
+            type:'post'
+          }
+          socket?.emit("removeNotification",notificationData)
+        }
+      
+      }
+    } else {
+      // If the post is currently unliked, call the API to like
+      response = await likePostApi([post._id], []);
+      if (response.status === 200) {
+        setLocalIsLiked(true);
+        setPosts((prevPosts) =>
+          prevPosts.map((p) =>
+            p._id === post._id
+              ? { ...p, isLiked: true, likeCount: p.likeCount + 1 }
+              : p
+          )
+        );
+       
+
+          // notifiying other  user post was liked 
+        
+          const notificationMessage = 'liked your post'
+          const SaveNotificatonResponse = await saveNotification(post.userId,post._id,post?.mediaUrls[0],notificationMessage,"post")
+             if(SaveNotificatonResponse){
+              socket?.emit("sendNotification",SaveNotificatonResponse.data)
+             }
+
+       
+      }
+    }
+
+    console.log('Response from like API:', response);
+  } catch (error) {
+    console.error('Error in like/unlike toggle:', error);
+  }finally{
+    setLoading(false)
+  }
+};
+
     return(
         <>
       <div id={id} className="flex flex-col max-w-5xl shadow-md bg-background-light dark:bg-background-dark lg:w-[28rem]">
@@ -133,14 +204,26 @@ console.log("is liked ",isLiked)
 
               <div className="flex flex-row items-center justify-between">
               <div className="flex flex-row items-center space-x-3">
-                <div className="flex flex-col items-center justify-center">
-                {isLiked ? (
-                <FaHeart className="text-2xl text-red-500 cursor-pointer" onClick={onLikeToggle} />
-              ) : (
-                <FaRegHeart className="text-2xl cursor-pointer dark:text-text-white text-text-charcoal"  onClick={onLikeToggle}/>
-              )}
-              <span onClick={()=> setIsLikedUsersList(!isLikedUsersList)} className="cursor-pointer font-golos dark:text-text-white text-text-charcoal">{post.likeCount || 0}</span>
-                </div>
+              <div className="flex flex-col items-center justify-center ">
+              {localIsLiked ? (
+      <FaHeart 
+        className={`text-2xl cursor-pointer text-red-500 ${loading ? 'animate-ping' : ''}`} 
+        onClick={!loading ? onLikeToggle : undefined} // Disable onClick if loading
+      />
+    ) : (
+      <FaRegHeart 
+        className={`text-2xl cursor-pointer dark:text-text-white text-text-charcoal ${loading ? 'animate-ping' : ''}`} 
+        onClick={!loading ? onLikeToggle : undefined} // Disable onClick if loading
+      />
+    )}
+    
+  {!loading && (
+    <span onClick={() => setIsLikedUsersList(!isLikedUsersList)} className="cursor-pointer font-golos dark:text-text-white text-text-charcoal">
+      {post.likeCount || 0}
+    </span>
+  )}
+</div>
+
 
                 <div className="flex flex-col items-center justify-center">
              <FaRegComment onClick={handleCommentBox}  className="text-2xl cursor-pointer dark:text-text-white text-text-charcoal"/>

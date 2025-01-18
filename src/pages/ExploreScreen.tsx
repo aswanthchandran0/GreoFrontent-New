@@ -80,7 +80,7 @@ const ExploreScreen = () => {
   console.log("Data:", data);
   console.log("Page Number:", pageRef.current); 
   return (
-    <div className="flex w-full  h-[91vh]">
+    <div className="flex h-full dark:bg-background-dark bg-background-light md:max-h-[90vh] max-h-[83vh]   lg:px-16 justify-center">
       <div
        ref={containerRef}
       className="grid grid-cols-3 gap-1 pb-12 overflow-y-auto md:px-80 scrollbar-hide">
@@ -97,8 +97,10 @@ const ExploreScreen = () => {
 
         {
             hasMore && (
-                <div ref={observerRef} className="relative flex items-center justify-center w-[40vh] h-[90vh] ">
-                    <LoaderSpinner loading={isFetching}/>
+                <div ref={observerRef} className=" flex h-full  dark:bg-background-dark bg-background-light md:max-h-[90vh] max-h-[83vh]   lg:px-16 justify-center">
+                  <div className="relative flex h-[80vh] w-[90vh] ">
+                    <LoaderSpinner loading={isFetching} />
+                  </div>
                 </div>
             )
         }

@@ -4,6 +4,9 @@ import dayjs from "dayjs";
 import { DEFAULT_PROFILE_IMAGE } from "../../../assets/images";
 import { User } from "../../../redux/slices/userSlice";
 import { useNavigate } from "react-router-dom";
+import { IChat } from "../../../Types/userChats/chatType";
+import { Message } from "yup";
+import { timeformat } from "../../../utils/formating";
 
 interface UserProps {
   chat: {
@@ -11,9 +14,11 @@ interface UserProps {
     timeStamb: Date;
   };
   currentUserId: string | null;
+  onClick: (chat: IChat) => void;
+  lastMessage: Message | undefined;
 }
 
-const UserComponent = ({ chat, currentUserId }: UserProps) => {
+const UserComponent = ({ chat, currentUserId, onClick ,lastMessage }: UserProps) => {
   const [userData, setUserData] = useState<User | null>(null);
   const navigate = useNavigate()
     // Get the opponent user's data
@@ -37,11 +42,14 @@ const UserComponent = ({ chat, currentUserId }: UserProps) => {
       const opponentId = chat.members.find((id) => id !== currentUserId);
       if (opponentId) {
         navigate(`/chat/${opponentId}`); // Navigate with userId as a parameter
+        onClick(chat)
       }
     };
 
+   
+
     return(
-        <div className="cursor-pointer hover:bg-background-EerieBlack" onClick={handleUserClick}>
+        <div className="cursor-pointer hover:bg-background-lightGray dark:hover:bg-background-EerieBlack"  onClick={handleUserClick}>
  <div className="flex flex-row items-center w-full gap-2 p-2">
               <div className="flex-shrink-0 w-16 h-16 overflow-hidden rounded-full">
            <img className="object-cover w-full h-full" src={userData?.profileImage || DEFAULT_PROFILE_IMAGE}
@@ -49,7 +57,16 @@ const UserComponent = ({ chat, currentUserId }: UserProps) => {
               </div>
 
               <div className="flex justify-between w-full">
+                <div className="flex flex-col w-full">
                 <span className="text-md font-golos ">{userData?.name || userData?.user_name}</span>
+                <div className="flex justify-between w-full ">
+
+                <p className="text-sm text-gray-500">
+        {lastMessage ? lastMessage.text : "No messages yet"}
+      </p>
+      <p className="text-sm text-gray-500">{lastMessage ? timeformat(lastMessage.createdAt) : "No messages yet"}</p>
+                </div>
+                </div>
                 <span className="font-bold text-text-green font-golos">
                 {/* {userData ? (userData.status === "online" ? "online" : lastActive) : "offline"} */}
                 </span>

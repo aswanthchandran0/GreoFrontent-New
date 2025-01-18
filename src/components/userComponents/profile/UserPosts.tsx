@@ -12,6 +12,10 @@ import { getSavedItemApi, getUserRollApi } from "../../../services/user/api";
 import UserRollCard from "./userRollCard";
 import { SavedItem } from "../../../Types/savedItemTypes";
 import SavedItemCard from "./SavedItemCard";
+import { useSelector } from "react-redux";
+import { RootState } from "../../../redux/store";
+import { LoaderSpinner } from "../../ui/LoadingSpinner";
+import toast from "react-hot-toast";
 // Define types for props
 interface User {
   id:string
@@ -37,7 +41,7 @@ export interface IRoll{
   userName?:string
   profileImage?: string; 
   isLikedByViewingUser?:boolean
-  likeCount?:number
+  likeCount:number
   commentCount?:number
   isSaved:boolean
 }
@@ -50,6 +54,8 @@ const UserPosts: React.FC<UserPostsProps> = ({ user, posts,setRefreshPosts,refre
   const [userPosts, setUserPosts] = useState<IPost[]>([]);
   const [savedItems, setSavedItems] = useState<SavedItem[]>([]); 
   const { username } = useParams();
+  const [loading,setLoading] = useState<boolean>(false)
+  const loggedInuser = useSelector((state:RootState)=>state.UserReducer.user)
  console.log("savedItems",savedItems)
   // for post update
   useEffect(() => {
@@ -75,11 +81,25 @@ const UserPosts: React.FC<UserPostsProps> = ({ user, posts,setRefreshPosts,refre
 // fetch user Roll 
 useEffect(()=>{
   if(selectedOption == 'Roll'){
-    const fetchUserRoll = async()=>{
-      const response  = await getUserRollApi(user?.id??'')
-      setRolls(response.data)
-    }
-    fetchUserRoll()
+   
+      const fetchUserRoll = async()=>{
+        try{
+          setLoading(true)
+        const response  = await getUserRollApi(user?.id??'')
+        setRolls(response.data)
+
+      }catch(err){
+        toast.error("failed to fetch roll")
+         console.log("error in fetch roll",err)
+       }finally{
+         setLoading(false)
+      
+       }
+      }
+      fetchUserRoll()
+
+   
+    
   } 
 },[selectedOption,user?.id])
 
@@ -89,10 +109,13 @@ useEffect(()=>{
   if (selectedOption === "Saved") {
     const fetchSavedItems = async () => {
       try {
+        setLoading(true)
         const response = await getSavedItemApi(); // Update with your API
         setSavedItems(response.data);
       } catch (error) {
         console.error("Error fetching saved items:", error);
+      }finally{
+        setLoading(false)
       }
     };
     fetchSavedItems();
@@ -113,8 +136,8 @@ const handleUpdatePostCatch = (postId:string,content:string)=>{
   return (
     <div className="relative flex flex-col w-full">
       <div className="flex flex-row items-center justify-center space-x-3 md:justify-end ">
-        {username === user?.user_name && (
-          <button    onClick={() => setIsUploadOptionComponent(true)} className="relative flex flex-row items-center justify-center p-1 text-white border rounded-md hover:bg-white hover:text-text-Grayish ">
+        {username === loggedInuser?.user_name && (
+          <button    onClick={() => setIsUploadOptionComponent(true)} className="relative flex flex-row items-center justify-center p-1 border rounded-md dark:text-white hover:bg-white hover:text-text-Grayish ">
             <IoMdAdd className="text-md" />
          
             <p className="text-md">upload</p>
@@ -148,13 +171,18 @@ const handleUpdatePostCatch = (postId:string,content:string)=>{
    
       <div className="grid grid-cols-2 overflow-y-scroll scrollbar-hide">
    {
-    selectedOption =='Roll' &&  rolls.map((roll)=>(
-      <UserRollCard roll={roll} />
-    ))
+    loading ? (
+      <LoaderSpinner loading={loading}/>
+   
+    ):(
+      selectedOption =='Roll' &&  rolls.map((roll)=>(
+        <UserRollCard roll={roll} />
+      ))
+    )
    }
 
 {selectedOption === "Saved" &&
-    savedItems.map((savedItem, index) =>
+  savedItems &&  savedItems.map((savedItem, index) =>
       savedItem.items.map((item, itemIndex) => (
         <SavedItemCard
           key={itemIndex}

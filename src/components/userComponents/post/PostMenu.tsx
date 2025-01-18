@@ -93,12 +93,12 @@ const PostMenu: React.FC<PostMenuProps> = ({
 
  
 
-  const loggedUserPostMenu = () => (
+  const loggedUserPostMenu = ()=> (
     <div className="fixed inset-0 flex items-center justify-center w-full h-full pt-12 bg-transparent pb-14">
-      <div  className="flex flex-col items-center justify-center w-full h-full bg-opacity-50 bg-background-dark ">
+      <div  className="flex flex-col items-center justify-center w-full bg-opacity-50 h-dvh bg-background-dark ">
         <div
           onClick={(e) => e.stopPropagation()}
-          className="flex justify-center items-center flex-col w-full md:max-h-[35rem]  max-w-[25rem] bg-background-customDarkGray rounded"
+          className="flex justify-center items-center flex-col w-full md:max-h-[35rem]  max-w-[25rem] bg-background-light dark:bg-background-customDarkGray rounded"
         >
           {isDeleteModal ? (
             <div className="relative flex flex-col items-center justify-center w-full p-4 space-y-4 h-80">
@@ -106,7 +106,7 @@ const PostMenu: React.FC<PostMenuProps> = ({
                 <LoaderSpinner loading={isLoading} />
               ) : (
                 <>
-                  <span className="text-text-white">
+                  <span className="text-text-black dark:text-text-white">
                     {" "}
                     Do you realy want to delete this post?
                   </span>
@@ -134,13 +134,13 @@ const PostMenu: React.FC<PostMenuProps> = ({
                 <LoaderSpinner loading={isLoading} />
               ) : (
                 <>
-                  <span className=" text-text-white font-golos">
+                  <span className=" text-text-black dark:text-text-white font-golos">
                     Update Post Description
                   </span>
                   <textarea
                     onChange={(e) => setContent(e.target.value)}
                     value={content}
-                    className="w-full p-2 outline-none min-h-20 bg-background-charcoal text-text-white"
+                    className="w-full p-2 outline-none min-h-20 bg-background-lightGray dark:bg-background-charcoal text-text-black font-golos dark:text-text-white"
                     placeholder="description"
                   ></textarea>
 
@@ -165,16 +165,16 @@ const PostMenu: React.FC<PostMenuProps> = ({
             <div className="flex flex-col w-full">
               <div
                 onClick={() => setIsDeleteModal(!isDeleteModal)}
-                className="flex items-center justify-center w-full p-2 border-b hover:bg-background-charcoal border-background-charcoal"
+                className="flex items-center justify-center w-full p-2 border-b hover:bg-background-lightGray dark:hover:bg-background-charcoal border-background-charcoal"
               >
                 <span className="text-red-500">Delete</span>
               </div>
 
               <div
                 onClick={() => setIsEditDescription(!isEditDescription)}
-                className="flex items-center justify-center w-full p-2 border-b hover:bg-background-charcoal border-background-charcoal"
+                className="flex items-center justify-center w-full p-2 border-b hover:bg-background-lightGray dark:hover:bg-background-charcoal border-background-charcoal"
               >
-                <span className="text-text-white">Edit</span>
+                <span className="text-text-black font-golos dark:text-text-white">Edit</span>
               </div>
             </div>
           )}
@@ -188,22 +188,22 @@ const PostMenu: React.FC<PostMenuProps> = ({
       <div onClick={()=> onClose()} className="flex flex-col items-center justify-center w-full bg-opacity-50 h-dvh bg-background-dark ">
         <div
           onClick={(e) => e.stopPropagation()}
-          className="flex justify-center items-center flex-col w-full md:max-h-[35rem]  max-w-[25rem] bg-background-customDarkGray rounded"
+          className="flex justify-center items-center flex-col w-full md:max-h-[35rem]  max-w-[25rem] bg-background-light dark:bg-background-customDarkGray rounded"
         >
           <div className="flex flex-col w-full">
             {isReporting ? (
-              <div className="flex flex-col justify-center w-full border-b cursor-pointer border-background-charcoal">
+              <div className="flex flex-col justify-center w-full border-b cursor-pointer bg-background-light dark:bg-background-dark dark:border-background-charcoal">
                
 
               {
              isLoading?(
               <>
                <div className="relative flex flex-row items-center w-full p-2 border-b border-background-charcoal">
-                  <span className="absolute transform -translate-x-1/2 left-1/2 text-text-white font-golos">
+                  <span className="absolute transform -translate-x-1/2 left-1/2 text-text-black dark:text-text-white font-golos">
                     Report
                   </span>
 
-                  <IoCloseOutline onClick={()=>onClose()} className="flex ml-auto text-2xl font-bold cursor-pointer text-text-white" />
+                  <IoCloseOutline onClick={()=>onClose()} className="flex ml-auto text-2xl font-bold cursor-pointer dark:text-text-white" />
                 </div>
 
                 <div className="relative flex flex-col items-center justify-center w-full p-4 space-y-4 h-80">
@@ -213,30 +213,30 @@ const PostMenu: React.FC<PostMenuProps> = ({
                 ): isReported?(
                   <div className="flex flex-col items-center justify-center w-full p-4 space-y-4 h-80">
                     <GoCheckCircle className="text-5xl font-extrabold text-green-500" />
-                    <span className="text-text-white font-outfit">Thanks for your feedback</span>
+                    <span className="font-semibold dark:text-text-white font-outfit text-text-black">Thanks for your feedback</span>
                     <p className="text-sm text-text-darkGray font-golos">When you see something you don't like on Greo, you can report it if it doesn't follow our Community Standards, or you can remove the person who shared it from your experience.</p>
                    <button onClick={()=>onClose()} className="w-full p-2 bg-blue-500 rounded-md hover:bg-blue-600 text-text-white font-outfit">Close</button>
                   </div>
                 ):(
                 <> 
                  <div className="relative flex flex-row items-center w-full p-2 border-b border-background-charcoal">
-                  <span className="absolute transform -translate-x-1/2 left-1/2 text-text-white font-golos">
+                  <span className="absolute font-semibold transform -translate-x-1/2 left-1/2 text-text-black font-golos dark:text-text-white">
                     Report
                   </span>
 
-                  <IoCloseOutline onClick={()=>onClose()} className="flex ml-auto text-2xl font-bold cursor-pointer text-text-white" />
+                  <IoCloseOutline onClick={()=>onClose()} className="flex ml-auto text-2xl font-bold cursor-pointer dark:text-text-white" />
                 </div>
 
-                <div className="flex flex-col p-4">
-                  <span className=" text-text-white font-golos">
+                <div className="flex flex-col p-4 ">
+                  <span className=" text-text-black font-golos dark:text-text-white">
                     Why are you reporting this post?
                   </span>
 
                   {
                     reportingReasons.map((reason)=>(
-                      <div key={reason.id}  className="flex flex-row items-center w-full p-2 rounded hover:bg-background-charcoal">
+                      <div key={reason.id}  className="flex flex-row items-center w-full p-2 rounded hover:bg-background-lightGray dark:hover:bg-background-charcoal">
                     <div onClick={()=>handleReportPost(reason.value)} className="flex flex-row w-full py-2">
-                      <span className="text-sm text-text-white">{reason.message} </span>
+                      <span className="text-sm text-text-black font-outfit dark:text-text-white">{reason.message} </span>
                       <IoIosArrowForward className="flex ml-auto text-xl text-text-darkGray" />
                     </div>
                   </div>
@@ -252,7 +252,7 @@ const PostMenu: React.FC<PostMenuProps> = ({
             ) : (
               <div
                 onClick={() => setIsReporting(true)}
-                className="flex items-center justify-center w-full p-2 border-b cursor-pointer hover:bg-background-charcoal border-background-charcoal"
+                className="flex items-center justify-center w-full p-2 border-b cursor-pointer hover:bg-background-lightGray dark:hover:bg-background-charcoal border-background-charcoal"
               >
                 <span className="text-red-500">Report</span>
               </div>

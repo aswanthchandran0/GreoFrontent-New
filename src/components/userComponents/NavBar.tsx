@@ -20,55 +20,143 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../redux/store";
 import { debounce } from "lodash";
 import toast from "react-hot-toast";
-import { searchUsersApi } from "../../services/user/api";
+import {
+  getUserNotificationApi,
+  searchUsersApi,
+} from "../../services/user/api";
 import SearchedUsersList from "./SearchedUsersList";
 import { User } from "../../redux/slices/userSlice";
 import UploadOption from "./profile/UploadOption";
 import { IPost } from "../../Types/postTypes";
+import Notification from "./notification/Notification";
+import { INotification } from "../../Types/notifications/notificationTypes";
+import { useSocket } from "../../context/SocketContext";
 
 interface Props {
-  onNewPost: (post:IPost)=>void
+  onNewPost: (post: IPost) => void;
 }
-const NavBar:React.FC<Props> = ({ onNewPost }) => {
+const NavBar: React.FC<Props> = ({ onNewPost }) => {
   const [searchText, setSearchText] = useState<string>("");
-  const user = useSelector((state:RootState)=> state.UserReducer.user)
+  const user = useSelector((state: RootState) => state.UserReducer.user);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [notifications, setNotifications] = useState<INotification[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [isUploadOptionComponent, setIsUploadOptionComponent] =
+    useState<boolean>(false);
+  const { socket } = useSocket();
 
-
+  // fetch the local user
   const username = useSelector(
     (state: RootState) => state.UserReducer.user?.user_name
   );
 
-  const [searchResults, setSearchResults] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isUploadOptionComponent, setIsUploadOptionComponent] = useState<boolean>(false);
-  
+  // for searching 
   const debouncedSearch = debounce(async (query: string) => {
-    if(query.trim()){
-    try {
-      setIsLoading(true);
-    
+    if (query.trim()) {
+      try {
+        setIsLoading(true);
+
         const response = await searchUsersApi(query);
         setSearchResults(response.data);
-    
-    } catch (err) {
-      console.log(err);
-      toast.error("something went wrong");
-    } finally {
-      setIsLoading(false);
+      } catch (err) {
+        console.log(err);
+        toast.error("something went wrong");
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      setSearchResults([]);
     }
-  }else{
-    setSearchResults([])
-  }
   }, 500);
 
-  useEffect(()=>{
-   debouncedSearch(searchText)
-   return () => debouncedSearch.cancel()
-  },[searchText])
+  useEffect(() => {
+    debouncedSearch(searchText);
+    return () => debouncedSearch.cancel();
+  }, [searchText]);
+
+  const handleOnClose = () => {
+    setSearchResults([]);
+    setSearchText("");
+  };
+
+
+   // fetch notification
+ useEffect(() => {
+  const fetchNotifications = async () => {
+    setIsLoading(true)
+    try{
+      const response = await getUserNotificationApi();
+      setNotifications(response.data);
+    }catch(err){
+      console.log("error in fetch notification",err)
+    }finally{
+      setIsLoading(false)
+    }
+  };
+  fetchNotifications();
+}, []);
+
+// unreaded notification cout setting
+useEffect(()=>{
+const unReadedNotifications = notifications.filter((notification:INotification)=> notification.isRead ==false)
+setUnreadCount(unReadedNotifications.length)
+},[notifications])
+
+// socket notifcation listning
+useEffect(()=>{
+ socket?.on("receiveNotification",(newNotifications:INotification) =>{
+  console.log('notification recevied',newNotifications)
+  console.log('notification',notifications)
+  setNotifications((prev)=>{
+    // const isDuplicate = prev.some((notification)=>
+    // notification.entityId == newNotifications.entityId &&
+    // notification.initiatorId == newNotifications.initiatorId &&
+    // notification.type == newNotifications.type 
+    // )
+    // if(isDuplicate){
+    //   console.log('duplicate was occured')
+    //   return prev
+    // }
+    return [newNotifications,...prev]
+  })
   
- const handleOnClose = ()=>{
-  setSearchResults([])
-  setSearchText("")
+ })
+
+ // remove the notificatoin 
+socket?.on("receiveRemoveNotification",(removeNotification:INotification)=>{
+  console.log('recevied remove notification',removeNotification)
+  console.log('current notifcation',notifications)
+  setNotifications((prev) =>
+    prev.filter(
+      (notification) =>
+        !(
+          notification.entityId === removeNotification.entityId &&
+          notification.initiatorId === removeNotification.initiatorId &&
+          notification.type === removeNotification.type
+        )
+    )
+  );
+})
+
+ return ()=>{
+  socket?.off("receiveNotification")
+  socket?.off("receiveRemoveNotification")
+ }
+},[socket])
+
+
+// set setNotificationReaded
+ const setNotificationReaded = ()=>{
+
+  setNotifications((prevNotifications) =>
+    prevNotifications.map((notification) => ({
+      ...notification,
+      isRead: true,
+    }))
+  );
+  setUnreadCount(0);
  }
 
   return (
@@ -167,22 +255,23 @@ const NavBar:React.FC<Props> = ({ onNewPost }) => {
               </NavLink>
             </div>
 
-            <div onClick={() => setIsUploadOptionComponent(true)} className="px-4 rounded-full cursor-pointer p font-golos text-text-Grayish ">
-             upload
-            </div>
-            
-          </div>
-          <div>
-            <NavLink
-              className={({ isActive }) =>
-                ` cursor-pointer text-text-Grayish ${
-                  isActive && "text-black  dark:text-text-white"
-                }`
-              }
-              to="notification"
+            <div
+              onClick={() => setIsUploadOptionComponent(true)}
+              className="px-4 rounded-full cursor-pointer p font-golos text-text-Grayish "
             >
-              <IoMdNotifications className="text-2xl " />
-            </NavLink>
+              upload
+            </div>
+          </div>
+          <div className="relative flex items-center justify-center" onClick={() => setIsNotificationOpen(!isNotificationOpen)}>
+
+            <IoMdNotifications className="text-2xl cursor-pointer dark:text-text-Grayish hover:text-text-Grayish dark:hover:text-text-white " />
+          {unreadCount > 0 && (
+        <div
+        className="absolute top-0 right-0 flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-red-600 rounded-full lg:top-0 lg:left-5 sm:w-5 sm:h-5 sm:text-sm">
+     {unreadCount}
+    </div>
+  )}
+            
           </div>
         </div>
 
@@ -226,7 +315,10 @@ const NavBar:React.FC<Props> = ({ onNewPost }) => {
           </div>
 
           <div>
-            <PiPlusSquareBold onClick={() => setIsUploadOptionComponent(true)} className="text-3xl dark:text-text-Grayish" />
+            <PiPlusSquareBold
+              onClick={() => setIsUploadOptionComponent(true)}
+              className="text-3xl dark:text-text-Grayish"
+            />
           </div>
 
           <div>
@@ -253,22 +345,29 @@ const NavBar:React.FC<Props> = ({ onNewPost }) => {
             </NavLink>
           </div>
         </div>
-        {
-         searchText  && <SearchedUsersList users={searchResults} onClose={handleOnClose} />
-        }
-        
+        {searchText && (
+          <SearchedUsersList users={searchResults} onClose={handleOnClose} />
+        )}
       </nav>
 
       {isUploadOptionComponent && (
         <UploadOption
           userId={user?.id || ""}
           onClose={() => setIsUploadOptionComponent(false)}
-          setRefreshPosts={()=>{}}
+          setRefreshPosts={() => {}}
           refreshPosts={false}
           onNewPost={onNewPost}
         />
       )}
 
+      {isNotificationOpen && (
+        <Notification
+          notifications={notifications}
+          isLoading={isLoading}
+          onClose={() => setIsNotificationOpen(!isNotificationOpen)}
+          setNotificationReaded={setNotificationReaded}
+        />
+      )}
     </>
   );
 };

@@ -9,8 +9,10 @@ export interface IPost {
     profileImage: string | undefined;
     name:string
     user_name: string
-    isLiked:string
+    userId:string
+    isLiked:boolean
     isSaved:boolean
+    isBlocked:boolean
 }
 
 export type ReportReasonType =

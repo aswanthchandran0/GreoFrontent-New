@@ -101,20 +101,20 @@ const UploadOption: React.FC<UploadOptionProps>  = ({ userId, onClose,setRefresh
     return(
         <div className="fixed inset-0 z-50 flex items-center justify-center w-full h-full pt-12 bg-transparent pb-14">
         <div className="flex flex-col items-center justify-center w-full h-screen bg-opacity-50 bg-background-dark">
-        <div className="flex flex-col w-full items-center h-full max-w-md max-h-[70vh] rounded-md bg-background-customDarkGray ">
+        <div className="flex flex-col w-full items-center h-full max-w-md max-h-[70vh] rounded-md bg-background-light dark:bg-background-customDarkGray ">
         <div className="relative flex flex-row items-center justify-center w-full p-3 border-b border-text-charcoal">
                 <select
                 value={selectedOption}
                 onChange={(e) => setSelectedOption(e.target.value)}
-                className="p-2 bg-transparent border rounded-md cursor-pointer text-text-white border-text-charcoal focus:outline-none"
+                className="p-2 bg-transparent border rounded-md cursor-pointer font-golos dark:text-text-white border-text-charcoal focus:outline-none"
               >
                 {options.map((option) => (
-                  <option key={option} value={option} className="bg-background-dark text-text-white">
+                  <option key={option} value={option} className="dark:bg-background-dark dark:text-text-white">
                     {option}
                   </option>
                 ))}
               </select>
-                <IoCloseOutline  onClick={onClose} className="flex ml-auto text-2xl font-bold cursor-pointer text-text-white"/>
+                <IoCloseOutline  onClick={onClose} className="flex ml-auto text-2xl font-bold cursor-pointer text-text-black dark:text-text-white"/>
             </div>
 
 
@@ -134,8 +134,8 @@ const UploadOption: React.FC<UploadOptionProps>  = ({ userId, onClose,setRefresh
             :
             <>
              <PiFilmReel className="text-7xl text-text-Grayish" />
-         <p className="text-text-white">Select the video for upload.</p>
-         <button className="relative flex flex-row items-center justify-center p-1 text-white border rounded-md hover:bg-white hover:text-text-Grayish ">
+         <p className="text-text-Grayish font-golos dark:text-text-white">Select the video for upload.</p>
+         <button className="relative flex flex-row items-center justify-center p-1 border rounded-md text-text-black dark:text-white hover:bg-white hover:text-text-Grayish ">
           <FileInput acceptType="video" onSelectedFile={onSelectedVideo}   />
           <p className="text-md">upload</p>
         </button>
@@ -173,8 +173,8 @@ const UploadOption: React.FC<UploadOptionProps>  = ({ userId, onClose,setRefresh
                  {
                    !isloading ?
                    <>
-                   <p className="text-text-white">Select the post for upload.</p>
-                  <button className="relative flex flex-row items-center justify-center p-1 text-white border rounded-md hover:bg-white hover:text-text-Grayish ">
+                   <p className=" text-text-Grayish font-golos dark:text-text-white">Select the post for upload.</p>
+                  <button className="relative flex flex-row items-center justify-center p-1 border rounded-md text-text-black hover:dark:text-text-black dark:text-white hover:bg-white hover:text-text-Grayish ">
                   <FileInput acceptType="image" onSelectedFile={onSelectedFile}   />
                   <p className="text-md">upload</p>
                 </button>
