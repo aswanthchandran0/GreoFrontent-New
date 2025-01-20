@@ -1,6 +1,4 @@
-import { SavedItemCardProps } from "../components/userComponents/profile/SavedItemCard";
 import { IRoll } from "../components/userComponents/profile/UserPosts";
-import { Post } from "../interface/userInterface";
 import { IPost } from "./postTypes";
 
 export interface SavedItemArrayElement {
@@ -14,5 +12,9 @@ export interface SavedItemArrayElement {
 export interface SavedItem {
   type: "post" | "roll";
   userId: string;  // ID of the user who saved the post
-  items:SavedItemCardProps
+  items: {
+    type: "post" | "roll";
+    postData?: IPost; // Assuming `IPost` is the type for posts
+    rollData?: IRoll; // Assuming `IRoll` is the type for rolls
+  }[]; // Corrected to an array
 }

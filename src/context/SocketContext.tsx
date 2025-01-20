@@ -3,12 +3,14 @@ import { Socket } from "socket.io-client";
 import { getSocketInstance } from "../services/socketInstance";
 import { useSelector } from "react-redux";
 import { RootState } from "../redux/store";
+import { IMessage } from "../interface/messageInterface";
+import { ISendMessage } from "../interface/sendMessageInterface";
 
 interface ISocketContext{
     socket:Socket | null
     onlineUsers: { userId: string; socketId: string }[];
-    sendMessage: (message: any) => void; // Function to send messages
-  receiveMessage: any | null;
+    sendMessage: (message:ISendMessage) => void; // Function to send messages
+  receiveMessage: IMessage | null;
 }
 
 const SocketContext = createContext<ISocketContext | undefined>(undefined)
@@ -17,7 +19,7 @@ export const SocketProvider:React.FC<{children:React.ReactNode}> = ({children})=
   const localUser = useSelector((state:RootState)=> state.UserReducer.user)
     const [socket, setSocket] = useState<Socket | null>(null);
     const [onlineUsers, setOnlineUsers] = useState<{ userId: string; socketId: string }[]>([]);
-    const [receiveMessage, setReceiveMessage] = useState<any | null>(null);
+    const [receiveMessage, setReceiveMessage] = useState<IMessage | null>(null);
     useEffect(() => {
         const socketInstance = getSocketInstance();
         setSocket(socketInstance);
@@ -33,7 +35,15 @@ export const SocketProvider:React.FC<{children:React.ReactNode}> = ({children})=
         })
 
         socketInstance.on("receive-message", (data) => {
-          setReceiveMessage(data);
+          console.log('-------------------------------------receved messages in receive-message socket instance--------------------------------',data)
+          const message: IMessage = {
+            chatId: data.chatId || "", // Provide a default empty string or handle it appropriately
+            senderId: data.senderId,
+            text: data.text,  // Assuming data.message contains the actual message text
+            createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),// Default to current date-time if missing
+          };
+          setReceiveMessage(message);
+
         });
         
         return () => {
@@ -45,7 +55,7 @@ export const SocketProvider:React.FC<{children:React.ReactNode}> = ({children})=
         };
       }, [localUser?.id]);
        // Function to send a message through the socket
-      const sendMessage = (message: any) => {
+      const sendMessage = (message: ISendMessage) => {
         if (socket) {
           socket.emit("send-message", message);
         }

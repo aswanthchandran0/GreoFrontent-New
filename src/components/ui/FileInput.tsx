@@ -1,7 +1,7 @@
 import toast from "react-hot-toast"
 
 interface Props{
-    onSelectedFile:(file:File)=>void
+    onSelectedFile:(file: File | string)=>void
     acceptType:string
 }
 
@@ -44,7 +44,11 @@ const FileInput:React.FC<Props> = ({onSelectedFile,acceptType = 'image'})=>{
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = () => {
-          onSelectedFile(reader.result);
+            if (typeof reader.result === 'string') {
+                onSelectedFile(reader.result); // Only pass if it's a string
+              } else {
+                toast.error('Failed to read the file. Please try again.');
+              }
         };
       };
 

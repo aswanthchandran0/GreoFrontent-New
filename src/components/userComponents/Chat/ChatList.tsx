@@ -1,20 +1,20 @@
 import { useEffect, useState } from "react";
 import { IChat } from "../../../Types/userChats/chatType";
 import User from "./User";
-import { Message } from "yup";
 import { getMessagesApi } from "../../../services/user/api";
 import { useSocket } from "../../../context/SocketContext";
+import { IMessage } from "../../../interface/messageInterface";
 
 interface ChatListProps {
-    data: Chat[]; // Chats data passed from parent
+    data: IChat[]; // Chats data passed from parent
     currentUserId: string | null; // Current user ID
     onConversationClick: (chat: IChat) => void;
-    latestSendedMessage:IChat
+    latestSendedMessage:IMessage|null
   }
   
   const ChatList = ({ data, currentUserId ,onConversationClick,latestSendedMessage}: ChatListProps) => {
-    const [lastMessages, setLastMessages] = useState<Map<IChat, Message>>(new Map());
-  const { sendMessage, receiveMessage } = useSocket();
+    const [lastMessages, setLastMessages] = useState<Map<string, IMessage>>(new Map());
+  const {  receiveMessage } = useSocket();
   const [sortedChats, setSortedChats] = useState<IChat[]>([]);
   // Function to fetch the last message for each chat
   const fetchLastMessages = async () => {
@@ -56,7 +56,7 @@ interface ChatListProps {
 
       const updatedMessage = {
         ...receiveMessage,
-        createdAt: new Date().toISOString(), // Add the current timestamp
+        createdAt: new Date() // Add the current timestamp
       };
       
       setLastMessages((prevMessages) => {
@@ -77,9 +77,10 @@ interface ChatListProps {
       const lastMessageA = lastMessages.get(a.id);
       const lastMessageB = lastMessages.get(b.id);
 
-      // If no last message, use creation date
-      const timeA = lastMessageA ? new Date(lastMessageA.createdAt).getTime() : new Date(a.createdAt).getTime();
-      const timeB = lastMessageB ? new Date(lastMessageB.createdAt).getTime() : new Date(b.createdAt).getTime();
+         // If there's no last message, fall back to creation date (if available)
+    const timeA = lastMessageA ? new Date(lastMessageA.createdAt).getTime() : 0;
+    const timeB = lastMessageB ? new Date(lastMessageB.createdAt).getTime() : 0;
+
 
       return timeB - timeA; // Most recent first
     });
@@ -87,13 +88,7 @@ interface ChatListProps {
     setSortedChats(sorted);
   }, [lastMessages, data]); 
   
-  //  hided
-    // const allUserIds = data
-    // .map((chat) =>
-    //   chat.members.filter((member) => member !== currentUserId && member !== null)
-    // )
-    // .flat();
-
+  
 
   // Remove duplicates by converting the array to a Set, then back to an array
   // const uniqueUserIds = Array.from(new Set(allUserIds));

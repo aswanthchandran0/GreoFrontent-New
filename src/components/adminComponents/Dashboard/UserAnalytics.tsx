@@ -1,5 +1,6 @@
 import { FaUser } from "react-icons/fa";
 import ReactApexCharts from "react-apexcharts";
+import { ApexOptions } from "apexcharts"; // Only importing ApexOptions
 
 interface UserAnalyticsProps {
   totalUsers: number;
@@ -15,24 +16,22 @@ const UserAnalytics = ({
   // Calculate inactive users
   const inactiveUsers = totalUsers - activeUsers - suspendedUsers;
 
-  const options = {
+  // Properly type the options object
+  const options: ApexOptions = {
     series: [activeUsers, inactiveUsers, suspendedUsers],
     chart: {
       width: 380,
-      type: "donut",
-      animation: {
-        animations: {
+      type: "donut" as const,
+      animations: { // Changed from 'animation' to 'animations'
+        enabled: true,
+        speed: 800, // Duration of the animation in milliseconds
+        animateGradually: {
           enabled: true,
-          easing: "easeinout",
-          speed: 800, // Duration of the animation in milliseconds
-          animateGradually: {
-            enabled: true,
-            delay: 300, // Delay between animations for each data point
-          },
-          dynamicAnimation: {
-            enabled: true,
-            speed: 350, // Animation speed for dynamic updates
-          },
+          delay: 300, // Delay between animations for each data point
+        },
+        dynamicAnimation: {
+          enabled: true,
+          speed: 350, // Animation speed for dynamic updates
         },
       },
     },
@@ -50,7 +49,7 @@ const UserAnalytics = ({
       },
     },
     title: {
-      text: "users",
+      text: "Users",
     },
     responsive: [
       {
@@ -69,15 +68,14 @@ const UserAnalytics = ({
       show: true,
       position: "bottom", // Shows the legend at the bottom
       markers: {
-        width: 12,
-        height: 12,
-        radius: 12,
+       size:10,
+       shape: "circle",
       },
       itemMargin: {
         horizontal: 5,
         vertical: 5,
       },
-      formatter: (seriesName: string, opts: { seriesIndex: number }) => {
+      formatter: (_: string, opts: { seriesIndex: number;w: { globals: { series: number[] } } }) => {
         // Customizing the series names for the legend
         const seriesLabels = ["Active", "Inactive", "Suspended"];
         return `${seriesLabels[opts.seriesIndex]}: ${opts.w.globals.series[opts.seriesIndex]}`;

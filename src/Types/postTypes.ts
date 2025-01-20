@@ -13,6 +13,13 @@ export interface IPost {
     isLiked:boolean
     isSaved:boolean
     isBlocked:boolean
+    // TACTICAL: postId, postDetails is used in here as the part of tactical for using that in blockmodal
+    postId?:string
+    postDetails?: {
+      isBlocked: boolean;
+      // Add other details if needed
+    };
+    id?:string
 }
 
 export type ReportReasonType =

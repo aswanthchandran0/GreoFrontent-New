@@ -5,9 +5,11 @@ import Comments from "../post/Comments";
 import OpenedRoll from "../Roll/OpenedRoll";
 import { likePostApi } from "../../../services/user/api";
 import toast from "react-hot-toast";
+import { ExploreI } from "../../../Types/exploreTypes";
 
 interface Prop{
     index:number
+    item:ExploreI
 }
 
 const ExploreFeed:React.FC<Prop> = ({item,index})=>{
@@ -38,10 +40,10 @@ const ExploreFeed:React.FC<Prop> = ({item,index})=>{
 const handleLike = async () => {
   try {
     if (!isLiked) {
-      await likePostApi([item._id], []); // Liking the post
+      await likePostApi([item._id ??''], []); // Liking the post
       setIsLiked(true);
     } else {
-      await likePostApi([], [item._id]); // Unliking the post
+      await likePostApi([], [item._id ?? '']); // Unliking the post
       setIsLiked(false);
     }
   } catch (err) {
@@ -65,7 +67,7 @@ useEffect(() => {
         }`}
       >
         <img
-          src={item.mediaUrls[0]}
+          src={"mediaUrls" in item ? item.mediaUrls[0] : item.mediaUrl}
           alt="post"
           className="object-cover w-full h-full rounded-md cursor-pointer"
         />

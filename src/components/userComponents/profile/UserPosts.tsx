@@ -182,7 +182,7 @@ const handleUpdatePostCatch = (postId:string,content:string)=>{
    }
 
 {selectedOption === "Saved" &&
-  savedItems &&  savedItems.map((savedItem, index) =>
+  savedItems &&  savedItems.map((savedItem) =>
       savedItem.items.map((item, itemIndex) => (
         <SavedItemCard
           key={itemIndex}

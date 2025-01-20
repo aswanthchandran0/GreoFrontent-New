@@ -10,7 +10,7 @@ import { toggleDarkMode } from "../../../redux/slices/preferenceSlice";
 
 interface Props {
   onClose: () => void;
-  user:User
+  user:User | null
 }
 
 const Settings: React.FC<Props> = ({ onClose,user }) => {
@@ -78,7 +78,7 @@ const handleToggleDarkMode = () => {
                   readOnly
                   className="flex w-full p-2 rounded outline-none cursor-pointer bg-background-lightGray dark:bg-background-charcoal text-text-black dark:text-text-white"
                   type="text"
-                  placeholder={user.email ?? 'example@gmail.com'}
+                  placeholder={user?.email ?? 'example@gmail.com'}
                 />
               </div>
             </div>
@@ -120,13 +120,13 @@ const handleToggleDarkMode = () => {
               <div className="flex-shrink-0 w-12 h-12 overflow-hidden rounded-full">
                 <img
                   className="object-cover w-full h-full"
-                  src={user.profileImage || DEFAULT_PROFILE_IMAGE}
+                  src={user?.profileImage || DEFAULT_PROFILE_IMAGE}
                   alt=""
                 />
               </div>
 
               <div className="flex flex-col ">
-                <span className="font-golos text-text-black dark:text-text-white">{user.name || 'user'}</span>
+                <span className="font-golos text-text-black dark:text-text-white">{user?.name || 'user'}</span>
               </div>
 
               <div className="flex justify-end w-full">

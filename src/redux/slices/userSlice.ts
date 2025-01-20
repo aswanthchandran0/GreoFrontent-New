@@ -111,6 +111,10 @@ export interface User {
   socketId?:string
   createdAt?:string
   followersCount?:number
+  // TACTICAL: for topUsers
+  reason?:string,
+  _id?:string,
+  bio?:string
 }
 
 interface UserAuthState {

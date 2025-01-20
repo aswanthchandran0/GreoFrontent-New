@@ -1,28 +1,34 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { DEFAULT_PROFILE_IMAGE } from "../../../assets/images"
 import { FaRegHeart } from "react-icons/fa";
 import { FaRegComment } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
 import UserDetails from "../userManagement/UserDetails";
 import { getStackOfUsersApi } from "../../../services/admin/adminApi";
+import {  ViewPost } from "./Posts";
+import { User } from "../../../redux/slices/userSlice";
 
-const PostDetails = ({data})=>{
+interface Props{
+  data:ViewPost | null
+}
+const PostDetails:React.FC<Props> = ({data})=>{
+  console.log("data in post details",data)
    const [UserDetailsComponent,setUserDetailsComponent] = useState(false)
    const [userDetailsWithReasons, setUserDetailsWithReasons] = useState([]);
    const [loading, setLoading] = useState(true);
-   const [selectedUserId, setSelectedUserId] = useState(null);
+   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
     
  console.log('data',data)
+  console.log('loading',loading)
 
   useEffect(() => {
     const fetchUserDetails = async () => {
       try {
-        const userIds = data.users.map((user) => user.id);
-        const response = await getStackOfUsersApi(userIds);
+        const userIds = data?.users.map((user) => user.id);
+        const response = await getStackOfUsersApi(userIds ?? []);
         const userDetails = response.data;
         
-        const mergedData = userDetails.map((userDetail) => {
-          const reasonData = data.users.find(
+        const mergedData = userDetails.map((userDetail:User) => {
+          const reasonData = data?.users.find(
             (user) => user.id === userDetail._id // Match IDs
           );
           return {
@@ -44,7 +50,7 @@ const PostDetails = ({data})=>{
 
 
 
-  const handleViewUserDetails = (userId) => {
+  const handleViewUserDetails = (userId:string) => {
     setSelectedUserId(userId); // Set the selected userId for viewing details
     setUserDetailsComponent(true); // Show the user details component
   };
@@ -54,7 +60,7 @@ const PostDetails = ({data})=>{
 
 {
 UserDetailsComponent ?
-<UserDetails close={setUserDetailsComponent} userId={selectedUserId}/>
+<UserDetails close={setUserDetailsComponent} userId={selectedUserId ?? ''}/>
 :
 <>
 
@@ -81,12 +87,12 @@ UserDetailsComponent ?
       <tbody>
         <tr className="border-b">
           {
-            userDetailsWithReasons && userDetailsWithReasons.map((user,index)=>(
+            userDetailsWithReasons && userDetailsWithReasons.map((user:User)=>(
               <>
-<td className="px-4 py-2">{user.name}</td>
+<td className="px-4 py-2">{user?.name}</td>
 <td className="px-4 py-2">{user.reason}</td>
           <td
-           onClick={() => handleViewUserDetails(user._id)}
+           onClick={() => handleViewUserDetails(user._id ?? '')}
           className="px-4 py-2">
             <button  className="px-2 py-1 text-white bg-blue-500 rounded hover:bg-blue-600">
               view
@@ -110,19 +116,19 @@ UserDetailsComponent ?
 
 <div className="flex flex-col space-y-2">
   <div className="flex w-full h-full overflow-hidden rounded cursor-pointer max-w-96 max-h-96">
-    <img className="flex object-cover w-full h-full" src={data.postDetails.mediaUrls[0]} alt="" />
+    <img className="flex object-cover w-full h-full" src={data?.postDetails.mediaUrls[0]} alt="" />
   </div>
 
   
   <div className="flex flex-row justify-center w-full gap-5 p-2 rounded shadow">
   <div className="flex flex-col items-center justify-center">
     <FaRegHeart className="text-2xl text-indigo-500"/>
-    <span className="font-semibold text-indigo-500 font-golos">{data.likeCount || 0}</span>
+    <span className="font-semibold text-indigo-500 font-golos">{data?.likeCount || 0}</span>
   </div>
 
   <div className="flex flex-col items-center justify-center">
   <FaRegComment  className="text-2xl text-indigo-500"/>
-    <span className="font-semibold text-indigo-500 font-golos">{data.commentCount || 0}</span>
+    <span className="font-semibold text-indigo-500 font-golos">{data?.commentCount || 0}</span>
   </div>
 
   
@@ -131,7 +137,7 @@ UserDetailsComponent ?
   <div className="flex flex-row justify-center w-full p-2 bg-indigo-500 rounded shadow">
   <div className="flex flex-col w-full p-2 ">
   <span className="text-lg font-semibold text-text-white">Description</span>
-  <span className="font-semibold text-text-white">{data.postDetails.content}</span>
+  <span className="font-semibold text-text-white">{data?.postDetails.content}</span>
   </div>
   {/* <div className="flex items-center justify-center h-full p-2">
     <button className="w-full h-full px-4 font-bold text-indigo-500 rounded bg-background-light">view</button>
@@ -146,17 +152,17 @@ UserDetailsComponent ?
 
 <div className="flex flex-col space-y-2">
 <div className="flex w-full h-full overflow-hidden rounded cursor-pointer max-w-96 max-h-96">
-    <img className="flex object-cover w-full h-full" src={data.userDetails.profileImage || DEFAULT_PROFILE_IMAGE} alt="" />
+    <img className="flex object-cover w-full h-full" src={data?.userDetails.profileImage || DEFAULT_PROFILE_IMAGE} alt="" />
   </div>
 
   <div className="flex flex-row justify-center w-full bg-indigo-500 rounded shadow">
     <div className="flex flex-col w-full p-2 ">
-    <span className="font-semibold text-text-white">Name: {data.userDetails.name}</span>
-  <span className="font-semibold text-text-white ">Username: {data.userDetails.user_name}</span>
-  <span className="font-semibold text-text-white ">Bio: {data.userDetails.bio || "empty"}</span>
+    <span className="font-semibold text-text-white">Name: {data?.userDetails.name}</span>
+  <span className="font-semibold text-text-white ">Username: {data?.userDetails.user_name}</span>
+  <span className="font-semibold text-text-white ">Bio: {data?.userDetails.bio || "empty"}</span>
     </div>
     <div className="flex items-center justify-center h-full p-2">
-    <button  onClick={() => handleViewUserDetails(data.userId)} className="w-full h-full px-4 font-bold text-indigo-500 rounded bg-background-light">view</button>
+    <button  onClick={() => handleViewUserDetails(data?.userId ?? '')} className="w-full h-full px-4 font-bold text-indigo-500 rounded bg-background-light">view</button>
     </div>
   </div>
 {/* 

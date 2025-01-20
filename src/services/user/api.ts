@@ -7,6 +7,7 @@ import { store } from "../../redux/store";
 import { RollUploadPayload } from "../../components/userComponents/profile/RollUpload";
 import { ReportReasonType } from "../../Types/postTypes";
 import { SavedItemArrayElement } from "../../Types/savedItemTypes";
+import { CreateChatRequest } from "../../Types/userChats/createChatApiType";
 const API = axios.create({
   baseURL: import.meta.env.VITE_BASE_URL,
 });
@@ -104,7 +105,7 @@ export const profileDetailsFetchApi = async (username:string) => {
   return await API.get(`/profile/${username}`)
 }
 
-export const updateProfileApi = async (data)=>{
+export const updateProfileApi = async (data:FormData)=>{
   return await API.patch('/update_profile', data)  
 }
 
@@ -163,7 +164,7 @@ export const addMessageApi = async (messageData: object) => {
   return await API.post(`/chat/m`, messageData)
 }
 
-export const createChatApi = async(data)=>{
+export const createChatApi = async(data:CreateChatRequest)=>{
   return await API.post('/chat',data)
 }
 

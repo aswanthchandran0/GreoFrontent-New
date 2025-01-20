@@ -109,8 +109,10 @@ const EditProfile = () => {
   //   }
   // };
 
-  const onImageSelected = (selectedImage:string) =>{
-    setSelectedImage(selectedImage)
+  const onImageSelected = (selectedImage:File | string) =>{
+    if(typeof selectedImage === "string"){
+      setSelectedImage(selectedImage)
+    }
     setIsCropping(true);
 
   }
@@ -215,6 +217,3 @@ const EditProfile = () => {
 
 export default EditProfile;
 
-
-//TODO: want to change the input box design
-//TODO: image size want to reduce

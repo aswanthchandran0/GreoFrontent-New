@@ -1,21 +1,17 @@
 import { useEffect, useState } from "react";
 import { getUserByIdApi } from "../../../services/user/api";
-import dayjs from "dayjs";
 import { DEFAULT_PROFILE_IMAGE } from "../../../assets/images";
 import { User } from "../../../redux/slices/userSlice";
 import { useNavigate } from "react-router-dom";
 import { IChat } from "../../../Types/userChats/chatType";
-import { Message } from "yup";
 import { timeformat } from "../../../utils/formating";
+import { IMessage } from "../../../interface/messageInterface";
 
 interface UserProps {
-  chat: {
-    members: string[];
-    timeStamb: Date;
-  };
+  chat:IChat
   currentUserId: string | null;
   onClick: (chat: IChat) => void;
-  lastMessage: Message | undefined;
+  lastMessage: IMessage | undefined;
 }
 
 const UserComponent = ({ chat, currentUserId, onClick ,lastMessage }: UserProps) => {
@@ -34,8 +30,7 @@ const UserComponent = ({ chat, currentUserId, onClick ,lastMessage }: UserProps)
     }, [chat, currentUserId]);
 
 
-    // Format the last active time
-  const lastActive = 'active'// For displaying "1h ago" or "5m ago"
+  
 
     // Handle user click to navigate to chat with that user
     const handleUserClick = () => {
@@ -64,7 +59,7 @@ const UserComponent = ({ chat, currentUserId, onClick ,lastMessage }: UserProps)
                 <p className="text-sm text-gray-500">
         {lastMessage ? lastMessage.text : "No messages yet"}
       </p>
-      <p className="text-sm text-gray-500">{lastMessage ? timeformat(lastMessage.createdAt) : "No messages yet"}</p>
+      <p className="text-sm text-gray-500">{lastMessage ? timeformat(lastMessage.createdAt.toString()) : "No messages yet"}</p>
                 </div>
                 </div>
                 <span className="font-bold text-text-green font-golos">

@@ -1,7 +1,12 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import ReactApexCharts from "react-apexcharts";
+import { User } from "../../../redux/slices/userSlice";
 
-const UserRegistractionGraph = ({ users }) => {
+interface Props{
+  users:User[]
+}
+
+const UserRegistractionGraph:React.FC<Props> = ({ users }) => {
   const [registrationData, setRegistrationData] = useState({
     categories: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
     series: Array(12).fill(0), // Initialize with 0 for each month
@@ -12,9 +17,11 @@ const UserRegistractionGraph = ({ users }) => {
     const newRegistrationData = Array(12).fill(0); // Initialize an empty array for each month
 
     users.forEach((user) => {
-      const createdAt = new Date(user.createdAt);
-      const month = createdAt.getMonth(); // Get the month (0-11)
-      newRegistrationData[month] += 1; // Increment count for that month
+      if (user.createdAt) {
+        const createdAt = new Date(user.createdAt); // Only process if createdAt is not undefined
+        const month = createdAt.getMonth(); // Get the month (0-11)
+        newRegistrationData[month] += 1; // Increment count for that month
+      }
     });
 
     setRegistrationData((prevData) => ({
@@ -32,7 +39,7 @@ const UserRegistractionGraph = ({ users }) => {
     ],
     chart: {
       height: 350,
-      type: "bar",
+      type: "bar" as const,
     },
     plotOptions: {
       bar: {
@@ -44,7 +51,7 @@ const UserRegistractionGraph = ({ users }) => {
     },
     dataLabels: {
       enabled: true,
-      formatter: function (val) {
+      formatter: function (val:number) {
         return val + " users";
       },
       offsetY: -20,
@@ -87,7 +94,7 @@ const UserRegistractionGraph = ({ users }) => {
       },
       labels: {
         show: false,
-        formatter: function (val) {
+        formatter: function (val:number) {
           return val + " users";
         },
       },
@@ -96,7 +103,7 @@ const UserRegistractionGraph = ({ users }) => {
       text: "Monthly User Registrations",
       floating: true,
       offsetY: 330,
-      align: "center",
+      align: "center" as const, 
       style: {
         color: "#444",
       },

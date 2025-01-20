@@ -1,15 +1,12 @@
 
-import { IPost } from "../../../Types/postTypes";
 import { IoClose } from "react-icons/io5";
-import { FaRegHeart } from "react-icons/fa";
-import { FaHeart } from "react-icons/fa";
 import { FaRegComment } from "react-icons/fa";
 import { IoIosShareAlt } from "react-icons/io";
 import { IoBookmarkOutline } from "react-icons/io5";
 import { useEffect, useState } from "react";
-import { commentSentAPi, getCommentsApi, rollCommentSentAPi, rollGetCommentsApi } from "../../../services/user/api";
-import { CommentsDto, sendComment } from "../../../Types/commentTypes";
-import { useNavigate, useParams } from "react-router-dom";
+import {  rollCommentSentAPi, rollGetCommentsApi } from "../../../services/user/api";
+import { CommentsDto, IComment,  } from "../../../Types/commentTypes";
+import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/store";
 import { DEFAULT_PROFILE_IMAGE } from "../../../assets/images";
@@ -17,12 +14,13 @@ import { HiSpeakerWave } from "react-icons/hi2";
 import { HiSpeakerXMark } from "react-icons/hi2";
 import { IRoll } from "../profile/UserPosts";
 import Comment from "../post/Comment";
-import { BsThreeDots } from "react-icons/bs";
 import RollMenu from "./RollMenu";
+import { ExploreI } from "../../../Types/exploreTypes";
  
 
 interface OpenedRollProps {
-  roll: IRoll;
+  // tactical in roll type
+  roll: IRoll | ExploreI;
 //   isLiked: boolean;
   // onLikeToggle: () => void;
   onClose: () => void;
@@ -40,14 +38,12 @@ const OpenedRoll: React.FC<OpenedRollProps> = ({roll,onClose}) =>
    const [commentsCount,setCommentsCount] = useState(0)
    const [isPlaying, setIsPlaying] = useState<boolean>(false);
    const [isAudioOn,setIsAudioOn] = useState<boolean>(true)
-   const loggedUser = useSelector((state: RootState) => state.UserReducer.user);
-   const { username } = useParams();
    const [isRollMenu, setIsRollMenu] = useState<boolean>(false);
 
   useEffect(()=>{
     try{
      const fetchComments = async()=>{
-       const response = await rollGetCommentsApi(roll._id)
+       const response = await rollGetCommentsApi(roll._id ?? '')
        setComments(response.data[0])
        setCommentsCount(response.data[0].length)
      console.log('response from the comments',response.data[0])    
@@ -60,7 +56,8 @@ const OpenedRoll: React.FC<OpenedRollProps> = ({roll,onClose}) =>
 
   console.log('role in opend file',roll)
 
-    const handleAddComment = (newComment)=>{
+    const handleAddComment = (newComment:IComment)=>{
+      console.log("----------------new comment-----------------",newComment)
       if(comments){
         const updatedComments = {...comments}
         updatedComments.comments.unshift(newComment)
@@ -70,7 +67,7 @@ const OpenedRoll: React.FC<OpenedRollProps> = ({roll,onClose}) =>
    // comment sent 
    const handleCommentPost= async()=>{
     try{
-     const response =  await rollCommentSentAPi(roll?._id,comment)
+     const response =  await rollCommentSentAPi(roll?._id ?? '',comment)
      handleAddComment(response.data)
      setComment('')
     }catch(err){
@@ -84,7 +81,8 @@ const OpenedRoll: React.FC<OpenedRollProps> = ({roll,onClose}) =>
 
    // profile navigation
     const handleProfileNavigation = ()=>{
-      if(roll.userName !== loggedUserName){
+    // TACTICAL: Handle fallback for userName based on possible variations in API data
+      if("userName" in roll && roll.userName && roll.userName !== loggedUserName){
         navigate(`/profile/${roll.userName}`)
       }
     }
@@ -116,7 +114,7 @@ const OpenedRoll: React.FC<OpenedRollProps> = ({roll,onClose}) =>
         <div  onClick={handlePlayPause}>
         <video
               id="rollVideo"
-              src={roll.mediaUrl}
+              src={'mediaUrl' in roll ? roll.mediaUrl : ''}
               className="object-contain w-full h-full rounded-md"
               autoPlay
               loop
@@ -141,7 +139,7 @@ const OpenedRoll: React.FC<OpenedRollProps> = ({roll,onClose}) =>
             <img  className="object-cover w-full h-full cursor-pointer" src={roll.profileImage || DEFAULT_PROFILE_IMAGE} alt="" />
           </div>
           <span onClick={handleProfileNavigation} className="font-bold cursor-pointer text-text-black font-golos dark:text-text-white">
-            {roll.userName}
+          {('userName' in roll ? roll.userName : 'Unknown User')}
           </span>
           <div className="flex flex-row ml-auto space-x-3 text-xl font-semibold cursor-pointer text-text-black dark:text-text-white">
             {/* {loggedUser?.user_name === username && (

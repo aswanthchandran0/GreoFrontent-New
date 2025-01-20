@@ -14,24 +14,26 @@ import { IPost } from "../../../Types/postTypes";
 interface UploadOptionProps {
     userId: string;
     onClose: () => void;
-    // onUploadComplete: () => void;
     setRefreshPosts: (value:boolean) => void;
     refreshPosts: boolean
-      onNewPost: (post:IPost)=>void
+      onNewPost?: (post:IPost)=>void
   }
   
 const UploadOption: React.FC<UploadOptionProps>  = ({ userId, onClose,setRefreshPosts,refreshPosts,onNewPost  })=>{
     const [selectedOption, setSelectedOption] = useState<string>("Upload Post");
     const options = ["Upload Post", "Upload Reel"];
     
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [selectedFile, setSelectedFile] = useState<string | null>(null);
     const [croppedImage, setCroppedImage] = useState<string | null>(null);
     const [isCropping, setIsCropping] = useState<boolean>(false);
     const [isloading,SetIsLoading]= useState<boolean>(false)
   // Handle file selection
-  const onSelectedFile = (file: File | null) => {
+  const onSelectedFile = (file: string | File) => {
     if (file) {
-      setSelectedFile(file);
+
+      if(typeof file ==='string'){
+        setSelectedFile(file);
+      }
       setIsCropping(true);
     }
   };
@@ -67,7 +69,9 @@ const UploadOption: React.FC<UploadOptionProps>  = ({ userId, onClose,setRefresh
       const response =  await postUploadApi(formData);
       setRefreshPosts(!refreshPosts);
       onClose()
-      onNewPost(response.data)
+    if (onNewPost) {
+        onNewPost(response.data);
+      }
     } catch (error) {
       console.error("Error uploading post:", error);
     }finally{
@@ -83,8 +87,9 @@ const UploadOption: React.FC<UploadOptionProps>  = ({ userId, onClose,setRefresh
   // reel 
    const [selectedVideo,setSelectedVideo] = useState<string| null>(null)
    const [showReelUpload,setShowReelUpload] = useState<boolean>(false)
-  const onSelectedVideo = (file: string | null) => {
-    if (file) {
+  const onSelectedVideo = (file: string | File) => {
+    if (file && typeof file ==='string') {
+
       setSelectedVideo(file)
     }
   };

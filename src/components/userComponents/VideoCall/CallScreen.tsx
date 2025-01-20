@@ -1,12 +1,10 @@
-import { useEffect } from "react";
+
 import { AiFillAudio, AiOutlineAudioMuted } from "react-icons/ai";
 import { FaVideo, FaVideoSlash } from "react-icons/fa";
 import { MdCallEnd } from "react-icons/md";
 import { User } from "../../../redux/slices/userSlice";
 import { DEFAULT_PROFILE_IMAGE } from "../../../assets/images";
-import { useSelector } from "react-redux";
-import { RootState } from "../../../redux/store";
-import { Socket } from "socket.io-client";
+
 
 
 interface Props{
@@ -22,7 +20,7 @@ interface Props{
 }
 
 
-const CallScreen:React.FC<Props> = ({user,myVideo,videoEnabled,audioEnabled,toggleAudio,toggleVideo,me,leaveCall,userVideo})=>{
+const CallScreen:React.FC<Props> = ({myVideo,videoEnabled,audioEnabled,toggleAudio,toggleVideo,me,leaveCall,userVideo})=>{
   
   console.log("user video in call screeen ",userVideo)
   return (

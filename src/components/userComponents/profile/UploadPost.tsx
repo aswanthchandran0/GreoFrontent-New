@@ -9,7 +9,7 @@ interface uploadPostProps {
   userId: string; 
 }
 const UploadPost: React.FC<uploadPostProps> = ({ file,onUploadFile,onCancelUpload ,userId }) => {
-  const [mediaType, setMediaType] = useState<string>("post");
+  const [mediaType] = useState<string>("post");
   const [comment, setComment] = useState<string>("");
 
   const handleUpload = () => {
@@ -29,7 +29,7 @@ const UploadPost: React.FC<uploadPostProps> = ({ file,onUploadFile,onCancelUploa
            <span className="text-blue-500 cursor-pointer text-md font-golos" onClick={handleUpload} >Next</span>
           </div>
           <div className="w-full h-96">
-            <img className="object-cover w-full h-full" src={file} alt="" />
+            <img className="object-cover w-full h-full" src={file || undefined} alt="" />
           </div>
 
           <div className="w-full px-5 md:mt-6 ">

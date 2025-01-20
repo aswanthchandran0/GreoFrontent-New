@@ -1,10 +1,10 @@
 import PostCard from "./PostCard";
 import { useEffect, useRef, useState } from "react";
-import { deleteNotification, getUserFeedApi, likePostApi, saveNotification} from "../../../services/user/api";
+import { getUserFeedApi} from "../../../services/user/api";
 import { IPost } from "../../../Types/postTypes";
 import { useOutletContext } from "react-router-dom";
 import { LoaderSpinner } from "../../ui/LoadingSpinner";
-import { useSocket } from "../../../context/SocketContext";
+
 
 
 interface OutletContext {
@@ -15,13 +15,11 @@ const Post = () => {
   const [posts, setPosts] = useState<IPost[]>([]);
   const { newPosts } = useOutletContext<OutletContext>();
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
-  const [unlikedPosts, setUnlikedPosts] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const skipRef = useRef(0);
   const [limit] = useState(10);
   const [hasMorePosts, setHasMorePosts] = useState(true);
-  const containerRef = useRef(null); 
-  const {socket} = useSocket()
+  const containerRef = useRef<HTMLDivElement | null>(null); 
  console.log("posts ",posts)
   //fetch user feed
   const fetchUserFeed = async () => {
@@ -34,7 +32,7 @@ const Post = () => {
       setPosts((prevPosts) => {
         const existingPostIds = new Set(prevPosts.map((post) => post._id));
         const uniquePosts = fetchedPosts.filter(
-          (post) => !existingPostIds.has(post._id)
+          (post:IPost) => !existingPostIds.has(post._id)
         );
         return [...prevPosts, ...uniquePosts];
       });
@@ -64,15 +62,6 @@ const Post = () => {
     fetchUserFeed();
   }, []);
 
-  // Handle scroll event to load more posts
-  // const handleScroll = () => {
-  //   if (containerRef.current) {
-  //     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-  //     if (scrollTop + clientHeight === scrollHeight && !loading && hasMorePosts) {
-  //       fetchUserFeed(); // Load more posts when bottom is reached
-  //     }
-  //   }
-  // };
   
   const handleScroll = () => {
     if (containerRef.current) {

@@ -7,8 +7,12 @@ import { IoIosShareAlt } from "react-icons/io";
 import { IoBookmarkOutline } from "react-icons/io5";
 import Comment from "./Comment";
 import { useEffect, useState } from "react";
-import { commentSentAPi, getCommentsApi, saveNotification } from "../../../services/user/api";
-import { CommentsDto } from "../../../Types/commentTypes";
+import {
+  commentSentAPi,
+  getCommentsApi,
+  saveNotification,
+} from "../../../services/user/api";
+import { CommentsDto, IComment} from "../../../Types/commentTypes";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/store";
@@ -17,11 +21,13 @@ import PostMenu from "./PostMenu";
 import { timeformat } from "../../../utils/formating";
 import SharingOption from "./SharingOption";
 import { useSocket } from "../../../context/SocketContext";
+import { ExploreI } from "../../../Types/exploreTypes";
+import { DEFAULT_PROFILE_IMAGE } from "../../../assets/images";
 
 const defaultProfileImage =
   "https://img.freepik.com/free-vector/businessman-character-avatar-isolated_24877-60111.jpg?t=st=1729611509~exp=1729615109~hmac=f56084f44329d588f81849bc897a8533f197f38f12e1fd5d08aca16c67adffb4&w=740";
 interface CommetsProps {
-  post: IPost | null;
+  post: IPost | null | ExploreI;
   isLiked: boolean;
   onLikeToggle: () => void;
   onClose: () => void;
@@ -44,7 +50,7 @@ const Comments: React.FC<CommetsProps> = ({
   const loggedUser = useSelector((state: RootState) => state.UserReducer.user);
   const { username } = useParams();
   const [isSharing, setIsSharing] = useState<boolean>(false);
-  const {socket} = useSocket() 
+  const { socket } = useSocket();
 
   useEffect(() => {
     return () => console.log("Comments component unmounted");
@@ -53,7 +59,7 @@ const Comments: React.FC<CommetsProps> = ({
   useEffect(() => {
     try {
       const fetchComments = async () => {
-        const response = await getCommentsApi(post._id || post?.id);
+        const response = await getCommentsApi(post?._id != null ? post._id : post?.id ?? '');
         setComments(response.data[0]);
       };
       fetchComments();
@@ -62,7 +68,8 @@ const Comments: React.FC<CommetsProps> = ({
     }
   }, []);
 
-  const handleAddComment = (newComment) => {
+  const handleAddComment = (newComment:IComment) => {
+    console.log('NEW COMMENT -----',newComment)
     if (comments) {
       const updatedComments = { ...comments };
       updatedComments.comments.unshift(newComment);
@@ -74,23 +81,31 @@ const Comments: React.FC<CommetsProps> = ({
       });
     }
   };
- 
+
   // comment sent
   const handleCommentPost = async () => {
     try {
       if (comment.trim()) {
-        const response = await commentSentAPi(post?._id || post?.id, comment);
+        const response = await commentSentAPi(post?._id ?? post?.id ?? '', comment);
         handleAddComment(response.data);
         setComment("");
-        
-  // comment notifying 
-  const NotifcationMessage = 'commented on your post'
-    const  notificationResponse = await saveNotification(post.userId,post?._id,post?.mediaUrls,NotifcationMessage,"comment")
-    console.log("response from the comment notirication",notificationResponse.data)
-    if(notificationResponse.data){
-    socket?.emit("sendNotification",notificationResponse.data)
-      
-    }
+
+        // comment notifying
+        const NotifcationMessage = "commented on your post";
+        const notificationResponse = await saveNotification(
+          post?.userId ?? "",
+          post?._id ?? "",
+          post && "mediaUrls" in post && post.mediaUrls?.[0] ? post.mediaUrls[0] : "",
+          NotifcationMessage,
+          "comment"
+        );
+        console.log(
+          "response from the comment notirication",
+          notificationResponse.data
+        );
+        if (notificationResponse.data) {
+          socket?.emit("sendNotification", notificationResponse.data);
+        }
       }
     } catch (err) {
       console.log("error", err);
@@ -104,7 +119,7 @@ const Comments: React.FC<CommetsProps> = ({
 
   // profile navigation
   const handleProfileNavigation = () => {
-    if (post.user_name !== loggedUserName) {
+    if (post && 'user_name' in post && post.user_name !== loggedUserName) {
       navigate(`/profile/${post.user_name}`);
     }
   };
@@ -133,7 +148,7 @@ const Comments: React.FC<CommetsProps> = ({
         {/* post side  */}
         <div className="flex items-center justify-center hidden w-2/5 h-full border-r cursor-pointer md:flex bg-background-dark border-text-charcoal ">
           <div>
-            <img src={post.mediaUrls[0]} alt="" />
+            <img src={post && 'mediaUrls' in post && post.mediaUrls.length > 0 ? post.mediaUrls[0] : DEFAULT_PROFILE_IMAGE} alt="" />
           </div>
         </div>
         {/* post side end */}
@@ -155,7 +170,7 @@ const Comments: React.FC<CommetsProps> = ({
               onClick={handleProfileNavigation}
               className="font-semibold cursor-pointer text-text-black dark:text-text-white"
             >
-              {post.user_name}
+             { post && 'user_name' in post && post.user_name ? post.user_name : 'Unknown User' }
             </span>
 
             <div className="flex flex-row ml-auto space-x-3 text-xl font-semibold cursor-pointer text-text-black dark:text-text-white">
@@ -170,13 +185,13 @@ const Comments: React.FC<CommetsProps> = ({
 
           <div className="w-full h-full p-2 space-y-5 overflow-y-auto scrollbar-hide ">
             {/* post description  */}
-            {post.content && (
+            {post?.content && (
               <div className="flex flex-row items-center space-x-2 ">
                 <div className="w-10 h-10 mb-auto overflow-hidden rounded-full">
                   <img
                     className="object-cover w-full h-full"
                     src={
-                      post.profileImage
+                      post?.profileImage
                         ? post.profileImage
                         : "https://img.freepik.com/free-vector/businessman-character-avatar-isolated_24877-60111.jpg?t=st=1729611509~exp=1729615109~hmac=f56084f44329d588f81849bc897a8533f197f38f12e1fd5d08aca16c67adffb4&w=740"
                     }
@@ -185,7 +200,7 @@ const Comments: React.FC<CommetsProps> = ({
                 </div>
                 <div className="flex flex-col mb-auto">
                   <p className="text-text-black dark:text-text-white font-golos">
-                    {post.user_name || "user name"}
+                  {post && "user_name" in post ? post.user_name : "user name"}
                   </p>
                   <p className="text-sm text-text-darkGray font-outfit">
                     {timeformat(post.createdAt?.toString() || "")}
@@ -267,16 +282,16 @@ const Comments: React.FC<CommetsProps> = ({
       </div>
       {isPostMenu && (
         <PostMenu
-          postId={post._id}
+          postId={post?._id ?? ''}
           clearDeletePostCatch={clearDeletePostCatch}
-          postContent={post.content}
+          postContent={post?.content ?? ''}
           handleUpdatePostCatch={handleUpdateContent}
         />
       )}
 
       {isSharing && (
         <SharingOption
-          postId={post._id}
+          postId={post?._id ?? ''}
           onClose={() => setIsSharing(!isSharing)}
         />
       )}

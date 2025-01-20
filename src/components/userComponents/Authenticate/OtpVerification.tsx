@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { resentOtpApi, verifyOtp } from "../../../services/user/api";
 import { useNavigate } from "react-router-dom";
 import { tokenService } from "../../../services/user/tokenService";
+import { AxiosError } from "axios";
 
 const OtpVerification: React.FC = () => {
   const user = useSelector((state: RootState) => state.UserReducer.user);
@@ -39,8 +40,12 @@ const OtpVerification: React.FC = () => {
         toast.success("sign up successfully");
 
         navigate("/");
-      } catch (error) {
-        toast.error(error.response?.data?.error);
+      } catch (error:unknown) {
+        if (error instanceof AxiosError) {
+          toast.error(error.response?.data?.error || "An error occurred");
+        } else {
+          toast.error("An unknown error occurred");
+        }
       }
     },
   });
@@ -97,7 +102,7 @@ const OtpVerification: React.FC = () => {
 
   const startTimer = () => {
     const expiryTime = Math.floor(Date.now() / 1000) + timerDuration;
-    localStorage.setItem(localStorageKey, expiryTime);
+    localStorage.setItem(localStorageKey, expiryTime.toString());
     setTimeLeft(timerDuration);
   };
 
@@ -125,10 +130,14 @@ const OtpVerification: React.FC = () => {
   const handleResentOtp = async () => {
     try {
       startTimer()
-      await resentOtpApi(user?.email);
+      await resentOtpApi(user?.email ?? '');
       toast.success("otp sent successfully");
     } catch (error) {
-      toast.error(error.response?.data?.error);
+      if (error instanceof AxiosError) {
+        toast.error(error.response?.data?.error || "An error occurred");
+      } else {
+        toast.error("An unknown error occurred");
+      }
     }
   };
 

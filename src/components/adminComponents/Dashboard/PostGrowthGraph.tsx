@@ -1,11 +1,21 @@
-import React, { useEffect, useState } from "react";
+import  { useEffect, useState } from "react";
 import ReactApexChart from "react-apexcharts";
 import { getAllRollsAndPostsApi } from "../../../services/admin/adminApi";
+import { IRoll } from "../../userComponents/profile/UserPosts";
+import { IPost } from "../../../Types/postTypes";
+
+
+interface ChartData {
+  postsData: number[];
+  rollsData: number[];
+  months: string[];
+}
+
 
 const PostGrowthGraph = () => {
   const [rolls, setRolls] = useState([]);
   const [posts, setPosts] = useState([]);
-  const [chartData, setChartData] = useState({
+  const [chartData, setChartData] = useState<ChartData>({
     postsData: [],
     rollsData: [],
     months: [],
@@ -22,8 +32,9 @@ const PostGrowthGraph = () => {
 
   useEffect(() => {
     if (posts.length > 0 || rolls.length > 0) {
-      const processChartData = (data) => {
-        const monthlyCounts = {};
+      const processChartData = (data:IPost[] | IRoll[]) => {
+        const monthlyCounts: { [key: string]: number } = {};
+
         data.forEach((item) => {
           const date = new Date(item.createdAt);
           const month = date.toLocaleString("default", { month: "short" }); // e.g., 'Jan', 'Feb'
@@ -35,14 +46,18 @@ const PostGrowthGraph = () => {
       const postsCounts = processChartData(posts);
       const rollsCounts = processChartData(rolls);
 
+      const monthMap: { [key: string]: number } = {
+        Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6,
+        Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12
+      };
+      
       const allMonths = Array.from(
         new Set([
           ...Object.keys(postsCounts),
           ...Object.keys(rollsCounts),
         ])
       ).sort(
-        (a, b) =>
-          new Date(`1 ${a} 2000`) - new Date(`1 ${b} 2000`) // Sort months in calendar order
+          (a, b) => monthMap[a] - monthMap[b] // Sort months in calendar order
       );
 
       const postsData = allMonths.map((month) => postsCounts[month] || 0);
@@ -55,7 +70,7 @@ const PostGrowthGraph = () => {
   const options = {
     chart: {
       height: 350,
-      type: "line",
+      type: "line" as const ,
       zoom: {
         enabled: false,
       },
@@ -64,11 +79,11 @@ const PostGrowthGraph = () => {
       enabled: false,
     },
     stroke: {
-      curve: "straight",
+      curve: "smooth" as const ,
     },
     title: {
       text: "Post & Roll Growth",
-      align: "left",
+      align: "left" as const,
     },
     grid: {
       row: {

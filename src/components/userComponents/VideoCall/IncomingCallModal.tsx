@@ -16,7 +16,6 @@ const IncomingCallModal = () => {
     videoEnabled,
     audioEnabled,
     myVideo,
-    callUser,
     me,
     leaveCall,
     userVideo,

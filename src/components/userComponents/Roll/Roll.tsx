@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import RollCard from "./RollCard";
-import { deleteNotification, latestRollApi, likeRollApi, saveNotification } from "../../../services/user/api";
+import {  latestRollApi} from "../../../services/user/api";
 import { ClipLoader } from "react-spinners";
 import { IRoll } from "../profile/UserPosts";
 
@@ -12,9 +12,10 @@ const Roll = () => {
   const [hasMore, setHasMore] = useState(true); // Check if more data is available
   const [isAudioOn, setIsAudioOn] = useState(false);
   const [likedRolls, setLikedRolls] = useState<Set<string>>(new Set());
-  const [unlikedRolls, setUnlikedRolls] = useState<Set<string>>(new Set());
+  // const [unlikedRolls, setUnlikedRolls] = useState<Set<string>>(new Set());
 
   // Fetch rolls
+  console.log("liked rolls",likedRolls)
   const fetchRolls = async () => {
     if (loading || !hasMore) return; // Prevent duplicate calls
     try {

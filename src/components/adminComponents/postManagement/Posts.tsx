@@ -4,13 +4,39 @@ import { DEFAULT_PROFILE_IMAGE } from "../../../assets/images";
 import PostDetails from "./PostDetails";
 import { IPost } from "../../../Types/postTypes";
 import BlockModal from "./BlockModal";
+import { User } from "../../../redux/slices/userSlice";
+
+
+export interface ViewPost {
+  userId: string;
+  postDetails: IPost;
+  userDetails: User;
+  likeCount: number;
+  commentCount: number;
+  users: User[];
+}
+
+
+export interface IReportedPost{
+  _id:string,
+  userId:string,
+  postId:string,
+  reportedCount:number,
+  likeCount:number,
+  commentCount:number
+  createdAt:string
+  postDetails:IPost
+  userDetails:User
+  users:User[]
+  userName:string
+}
 
 
 const Posts = ()=>{
 
-    const [reportedPosts,setReportedPosts] = useState<IPost[]>([])
+    const [reportedPosts,setReportedPosts] = useState<IReportedPost[]>([])
     const [isPostView,setIsPostView] = useState(false)
-    const [viewPost,setViewPost] = useState()
+    const [viewPost,setViewPost] = useState<ViewPost | null>(null)
     const [isBlockModal,setIsBlockModal] = useState(false)
     const [selectedPostId, setSelectedPostId] = useState<string>('');
    const [selectedAction, setSelectedAction] = useState<boolean>(false);
@@ -25,9 +51,9 @@ const Posts = ()=>{
 
   console.log("reported posts",reportedPosts)
   
-  const handlePostView = (post,user,likeCount,commentCount,userId,users)=>{
+  const handlePostView = (post:IPost,user:User,likeCount:number,commentCount:number,userId:string,users:User[])=>{
     // const Count = [...new Set(users.map(user =>user.userId))]
-    const data =  {
+    const data:ViewPost =  {
         userId:userId,
         postDetails:post,
         userDetails:user,
@@ -61,8 +87,8 @@ const Posts = ()=>{
      
 
      {
-        isPostView ?
-       <PostDetails data={viewPost} reports={reportedPosts?.users}/>
+        isPostView && viewPost ?
+       <PostDetails data={viewPost} />
         :
 
         <div className="w-full mt-4 overflow-x-auto overflow-y-scroll ">
@@ -100,7 +126,7 @@ const Posts = ()=>{
                     className="w-12 h-12 rounded-full"
                   />
                 </td>
-                <td className="px-4 py-2 font-bold text-center text-red-500 ">{[...new Set(post.users.map(user => user.userId))].length}</td>
+                <td className="px-4 py-2 font-bold text-center text-red-500 ">{[...new Set(post.users.map(user => user.id))].length}</td>
                 <td className="px-4 py-2 text-center">
                   <button onClick={()=>handlePostView(post.postDetails,post.userDetails,post.likeCount,post.commentCount,post.userId,post.users)} className="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600">
                     view

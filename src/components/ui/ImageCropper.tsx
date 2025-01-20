@@ -1,8 +1,5 @@
 import { useState } from "react"
 import Cropper from "react-easy-crop"
-import { RxBox } from "react-icons/rx";
-import { LuRectangleHorizontal } from "react-icons/lu";
-import { TbRectangleVertical } from "react-icons/tb";
 import { FaArrowLeftLong } from "react-icons/fa6";
 import { TbArrowsDiagonal } from "react-icons/tb";
 
@@ -12,7 +9,6 @@ interface CroppedAreaPixels {
   width: number;
   height: number;
 }
-
 
 interface ImageCropperProps {
   image: string | null;
@@ -37,7 +33,7 @@ const ImageCropper: React.FC<ImageCropperProps>  = ({image,onCropDone,onCropCanc
         const canvas = document.createElement("canvas");
         const context = canvas.getContext("2d");
         const imageElement = new Image();
-        imageElement.src = image;
+        imageElement.src = image ?? '';
     
         imageElement.onload = () => {
           canvas.width = croppedAreaPixels.width;
@@ -81,7 +77,7 @@ const ImageCropper: React.FC<ImageCropperProps>  = ({image,onCropDone,onCropCanc
           </div>
         <div className="relative w-full h-96">
         <Cropper
-    image={image}
+    image={image ?? undefined}
     crop={crop}
     zoom={zoom}
     aspect={aspect}
@@ -107,13 +103,7 @@ const ImageCropper: React.FC<ImageCropperProps>  = ({image,onCropDone,onCropCanc
           )
         }
  
-{/* <div>
-  <select name="" id=""></select>
-</div> */}
-        {/* <div className="flex gap-3 ">
-          <button onClick={onCropCancel} className="p-2 px-10 rounded bg-background-dark hover:bg-background-EerieBlack text-text-white">Cancel</button>       
-          <button onClick={handleCrop} className="p-2 px-10 bg-indigo-500 rounded hover:bg-indigo-600 text-text-white">Crop</button>       
- </div> */}
+
     </div>
 
    

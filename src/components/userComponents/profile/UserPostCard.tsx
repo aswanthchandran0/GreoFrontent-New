@@ -3,14 +3,14 @@ import { FaRegComment } from "react-icons/fa";
 import { IPost } from "../../../Types/postTypes";
 import { useState } from "react";
 import Comments from "../post/Comments";
-import { string } from "yup";
+
 
 interface UserPostCardProps {
     post:IPost
-    clearDeletePostCatch:(postId:string)=>void
-    handleUpdatePostCatch:(postId:string,content:string)=>void
+    clearDeletePostCatch?:(postId:string)=>void
+    handleUpdatePostCatch?:(postId:string,content:string)=>void
 }
-const UserPostCard:React.FC<UserPostCardProps> = ({post,clearDeletePostCatch,handleUpdatePostCatch}) =>{
+const UserPostCard:React.FC<UserPostCardProps> = ({post, clearDeletePostCatch = () => {},handleUpdatePostCatch = () => {}}) =>{
     const [isCommentBoxOpen, setIsCommentBoxOpen] = useState(false);
 
     

@@ -4,7 +4,7 @@ import * as Yup from "yup";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "../../../redux/store";
 import { GoogleSignIn, singinUser } from "../../../redux/slices/userSlice";
-import { useGoogleLogin } from "@react-oauth/google";
+import { useGoogleLogin, } from "@react-oauth/google";
 import toast from "react-hot-toast";
 
 
@@ -21,7 +21,7 @@ const Signin = () => {
       Password: Yup.string().required("Required"),
     }),
     onSubmit: async(values) => {
-      const action = await dispatch(
+      await dispatch(
         singinUser({
           email: values.Email,
           password: values.Password,
@@ -32,7 +32,7 @@ const Signin = () => {
   });
 
   const handleGoogleSignIn = useGoogleLogin({
-    onSuccess:async(response:any) => {
+    onSuccess:async(response: { access_token: string }) => {
   const action   = await dispatch(GoogleSignIn(response.access_token))
     if(GoogleSignIn.fulfilled.match(action)){
       navigate("/")
@@ -127,7 +127,7 @@ const Signin = () => {
 
               <div className="flex flex-col items-center">
                 <button
-                onClick={handleGoogleSignIn}
+                onClick={()=>handleGoogleSignIn()}
                 className="flex items-center justify-center w-full max-w-xs py-3 font-bold text-gray-800 transition-all duration-300 ease-in-out bg-green-100 rounded-lg shadow-sm focus:outline-none hover:shadow focus:shadow-sm focus:shadow-outline">
                   <div className="p-2 bg-white rounded-full">
                     <svg className="w-4" viewBox="0 0 533.5 544.3">

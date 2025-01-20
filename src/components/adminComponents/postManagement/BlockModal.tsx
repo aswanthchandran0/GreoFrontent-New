@@ -1,14 +1,14 @@
 import Modal from "react-modal";
 import { blockUserPost } from "../../../services/admin/adminApi";
-import { IPost } from "../../../Types/postTypes";
 import toast from "react-hot-toast";
 import { useState } from "react";
 import { LoaderSpinner } from "../../ui/LoadingSpinner";
+import { IReportedPost } from "./Posts";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  setReportedPosts: React.Dispatch<React.SetStateAction<IPost[]>>;
+  setReportedPosts: React.Dispatch<React.SetStateAction<IReportedPost[]>>;
   postId: string;
   action: boolean;
 }

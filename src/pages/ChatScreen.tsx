@@ -1,6 +1,6 @@
 import { IoChatbubblesOutline } from "react-icons/io5"
 import ChatList from "../components/userComponents/Chat/ChatList"
-import { Outlet, useNavigate, useParams } from "react-router-dom"
+import { Outlet,  useParams } from "react-router-dom"
 import { useSelector } from "react-redux"
 import { RootState } from "../redux/store"
 import { useEffect, useState } from "react"
@@ -8,6 +8,7 @@ import { User } from "../redux/slices/userSlice"
 import { IChat } from "../Types/userChats/chatType"
 import { createChatApi, getChatsApi, getUserByIdApi } from "../services/user/api"
 import { useSocket } from "../context/SocketContext"
+import { IMessage } from "../interface/messageInterface"
 
 const ChatScreen = () =>{
   const { userId } = useParams();
@@ -19,10 +20,8 @@ const ChatScreen = () =>{
   const [chats, setChats] = useState<IChat[]>([]);
   const [currentChat, setCurrentChat] = useState<IChat | null>(null);
   const [selectedUserData, setSelectedUserData] = useState<User | null>(null);
-  const [latestSendedMessage,setLatestSendedMessage] = useState<IChat | null>(null)
+  const [latestSendedMessage,setLatestSendedMessage] = useState<IMessage | null>(null)
   
-  const navigate = useNavigate();
-
   // Fetch opponent user data
   useEffect(() => {
     if (userId) {
@@ -69,7 +68,7 @@ const ChatScreen = () =>{
     if (!currentChat && userId) {
       try {
         const response = await createChatApi({
-          senderId: localUser?.id,
+          senderId: localUser?.id ?? '',
           receiverId: userId,
         });
         setChats((prevChats) => [...prevChats, response.data]);
@@ -85,7 +84,7 @@ const ChatScreen = () =>{
   }, [userId]);
 
 
-  const onNewMessage = (data:IChat) => {
+  const onNewMessage = (data:IMessage) => {
     setLatestSendedMessage(data)
   };
   

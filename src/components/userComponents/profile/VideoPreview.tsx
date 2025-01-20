@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { FaArrowLeftLong } from "react-icons/fa6";
 
 interface VideoPreviewProps {

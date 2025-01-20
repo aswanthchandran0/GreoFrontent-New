@@ -1,5 +1,5 @@
 import { useFormik } from "formik";
-import React, { useState } from "react";
+import  { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import * as Yup from "yup";
 import { useDispatch } from "react-redux";
@@ -48,7 +48,7 @@ const Signup = () => {
   })
 
   const handleGoogleSignup = useGoogleLogin({
-    onSuccess:async(response:any) => {
+    onSuccess:async(response: { access_token: string }) => {
   const action   = await dispatch(GoogleSignUp(response.access_token))
     if(GoogleSignUp.fulfilled.match(action)){
       navigate("/")
@@ -163,7 +163,7 @@ const Signup = () => {
 
               <div className="flex flex-col items-center">
                 <button
-                onClick={handleGoogleSignup}
+                onClick={()=>handleGoogleSignup()}
                  className="flex items-center justify-center w-full max-w-xs py-3 font-bold text-gray-800 transition-all duration-300 ease-in-out bg-green-100 rounded-lg shadow-sm focus:outline-none hover:shadow focus:shadow-sm focus:shadow-outline">
                   <div className="p-2 bg-white rounded-full">
                     <svg className="w-4" viewBox="0 0 533.5 544.3">

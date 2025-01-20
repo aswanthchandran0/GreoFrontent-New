@@ -17,7 +17,7 @@ const TopUser:React.FC<Props> = ({user})=>{
             UserDetailsComponent ?
     <div onClick={()=>setUserDetailsComponent(false)} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
         <div onClick={(e)=> e.stopPropagation()} className="max-w-6xl w-full rounded  bg-background-light h-[90vh]  overflow-y-scroll scrollbar-hide">
-        <UserDetails close={setUserDetailsComponent} userId={user?._id}/>
+        <UserDetails close={setUserDetailsComponent} userId={user?._id || ''}/>
         </div>
     </div>
             :

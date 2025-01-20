@@ -4,6 +4,7 @@ import * as Yup from "yup";
 import toast from "react-hot-toast";
 import {  forgotPasswordTokenGenerateAPI } from "../../../services/user/api";
 import { useState } from "react";
+import { AxiosError } from "axios";
 
 
 const ForgotPassword = ()=>{
@@ -23,8 +24,11 @@ const ForgotPassword = ()=>{
                 toast.success("check your email for reset password link")
             }catch(error){
               setLoading(false)
-                toast.error(error.response?.data?.error)
-                console.log(error.response?.data?.error)
+              if (error instanceof AxiosError) {
+                toast.error(error.response?.data?.error || "An error occurred");
+              } else {
+                toast.error("An unknown error occurred");
+              }
             }
         },
       });

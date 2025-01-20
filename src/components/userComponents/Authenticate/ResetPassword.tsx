@@ -5,11 +5,12 @@ import * as Yup from "yup";
 import toast from "react-hot-toast";
 import { updatePasswordApi } from "../../../services/user/api";
 import { useState } from "react";
+import { AxiosError } from "axios";
 
 const ResetPassword = () => {
   const token = useParams().token;
   const naviage = useNavigate();
-  const [loading,setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const formik = useFormik({
     initialValues: {
       Password: "",
@@ -24,21 +25,25 @@ const ResetPassword = () => {
         .matches(/[0-9]/, "Must contain at least one number"),
       ConfirmPassword: Yup.string()
         .required("Required")
-        .oneOf([Yup.ref("Password"), null], "Passwords must match"),
+        .oneOf([Yup.ref("Password")], "Passwords must match"),
     }),
     onSubmit: async (values) => {
       try {
-        setLoading(true)
-        await updatePasswordApi(token, values.Password,)
-        setLoading(false)
+        setLoading(true);
+        await updatePasswordApi(token ?? "", values.Password);
+        setLoading(false);
         toast.success("password changed successfully");
-         naviage("/auth/signin")
+        naviage("/auth/signin");
       } catch (error) {
-        setLoading(false)
-        toast.error(error.response?.data?.error);
-        console.log(error.response?.data?.error);
+        setLoading(false);
+        if (error instanceof AxiosError) {
+          toast.error(error.response?.data?.error || "An error occurred");
+        } else {
+          toast.error("An unknown error occurred");
+        }
+
+        console.log(error);
       }
-      
     },
   });
 
@@ -87,18 +92,15 @@ const ResetPassword = () => {
                   disabled={loading}
                   className="flex items-center justify-center w-full py-4 mt-5 font-semibold tracking-wide text-gray-100 transition-all duration-300 ease-in-out rounded-lg bg-text-lavenderPurple hover:bg-background-PurpleHeart focus:shadow-outline focus:outline-none"
                 >
-                
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"
-                    />
-                  
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"
+                  />
+
                   <span className="ml-3">
-                  {
-                        loading ? "Sending..." : "Update Password"
-                      }
-                    </span>
+                    {loading ? "Sending..." : "Update Password"}
+                  </span>
                 </button>
                 <div className="my-3 text-center border-b">
                   <div className="inline-block px-2 text-sm font-medium leading-none tracking-wide text-gray-600 transform translate-y-1/2 bg-white">
