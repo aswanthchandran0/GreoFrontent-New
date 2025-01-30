@@ -13,6 +13,8 @@ import { IoVideocamOutline } from "react-icons/io5";
 import dayjs from 'dayjs'
 import { IMessage } from "../../../interface/messageInterface";
 import { ISendMessage } from "../../../interface/sendMessageInterface";
+import EmojiPicker , { EmojiClickData } from "emoji-picker-react";
+import useClickOutside from "../../../customHook/useClickOutside";
 
 type OutletContextType = {
     opponentUser: User | null;
@@ -26,10 +28,20 @@ type OutletContextType = {
 };
 
 const Chat = () => {
+  
   const opponentUserId = useParams().userId
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [newMessage, setNewMessage] = useState<string>("");
   const [isTyping, setIsTyping] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+
+
+  // Custom hook to detect clicks outside
+  useClickOutside(emojiPickerRef, () => {
+    setShowEmojiPicker(false);
+  });
+
   // console.log(
   //   'messages in the message page',messages
   // )
@@ -143,7 +155,14 @@ const Chat = () => {
     }
   }, [opponentUser, chat, isOnline,opponentUserId]);
 
-  console.log("--------------------message i got in there ---------------",messages)
+
+   // Handle emoji selection
+   const handleEmojiClick = (emojiObject: EmojiClickData) => {
+    setNewMessage((prevMessage) => prevMessage + emojiObject.emoji);
+    setIsTyping(emojiObject.emoji.length > 0);
+  };
+
+  
   return (
     <div className="flex flex-col w-full h-full ">
       <div className="flex flex-row items-center w-full p-2 space-x-2 border border-text-charcoal">
@@ -235,9 +254,30 @@ const Chat = () => {
 
 
 
-
       <div className="bottom-0 flex flex-row items-center w-full h-12 max-w-4xl gap-3 p-2 px-3 mt-auto mb-5 border rounded-lg dark:border-none lg:mx-5 bg-background-light dark:bg-background-charcoal">
-        <BsEmojiSmile className="w-6 h-6 cursor-pointer text-text_white" />
+  <div className="relative">
+    <BsEmojiSmile 
+      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+      className="w-6 h-6 cursor-pointer text-text_white" 
+    />
+    
+    {showEmojiPicker && (
+      <div 
+        ref={emojiPickerRef}
+        className="absolute left-0 z-50 bottom-12" // Increased z-index
+      >
+        <EmojiPicker
+          onEmojiClick={handleEmojiClick}
+          previewConfig={{ showPreview: false }}
+          width={300}
+          height={400}
+          skinTonesDisabled
+          searchDisabled
+        />
+      </div>
+    )}
+  </div>
+        
         <input
           value={newMessage}
           onChange={handleNewMessage}

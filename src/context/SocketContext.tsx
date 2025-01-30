@@ -21,39 +21,53 @@ export const SocketProvider:React.FC<{children:React.ReactNode}> = ({children})=
     const [onlineUsers, setOnlineUsers] = useState<{ userId: string; socketId: string }[]>([]);
     const [receiveMessage, setReceiveMessage] = useState<IMessage | null>(null);
     useEffect(() => {
-        const socketInstance = getSocketInstance();
-        setSocket(socketInstance);
-        
-        socketInstance.on('connect', () => {
-          if (localUser?.id) {
-            socketInstance.emit("new-user-add", localUser.id);
-          }
-        });
-        
-        socketInstance.on("get-users", (users) => {
-          setOnlineUsers(users);
-        })
-
-        socketInstance.on("receive-message", (data) => {
-          console.log('-------------------------------------receved messages in receive-message socket instance--------------------------------',data)
-          const message: IMessage = {
-            chatId: data.chatId || "", // Provide a default empty string or handle it appropriately
-            senderId: data.senderId,
-            text: data.text,  // Assuming data.message contains the actual message text
-            createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),// Default to current date-time if missing
-          };
-          setReceiveMessage(message);
-
-        });
-        
-        return () => {
-           socketInstance.off("get-users");
-      socketInstance.off("receive-message");
-      if (socketInstance && socketInstance.connected) {
-        socketInstance.disconnect();
+      const socketInstance = getSocketInstance();
+      setSocket(socketInstance);
+    
+      const handleConnect = () => {
+        if (localUser?.id) {
+          socketInstance.emit("new-user-add", localUser.id);
+          console.log("Emitting new-user-add on connect");
+        }
+      };
+    
+      // Immediate emission if already connected
+      if (socketInstance.connected && localUser?.id) {
+        socketInstance.emit("new-user-add", localUser.id);
+        console.log("Emitting new-user-add immediately");
       }
+    
+      socketInstance.on('connect', handleConnect);
+    
+      const handleUsersUpdate = (users: { userId: string; socketId: string }[]) => {
+        console.log("Received updated users list:", users);
+        setOnlineUsers(users);
+      };
+    
+      socketInstance.on("get-users", handleUsersUpdate);
+    
+    
+    
+      const handleMessage = (data: any) => {
+        console.log('Received message:', data);
+        const message: IMessage = {
+          chatId: data.chatId || "",
+          senderId: data.senderId,
+          text: data.text,
+          createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
         };
-      }, [localUser?.id]);
+        setReceiveMessage(message);
+      };
+    
+      socketInstance.on("receive-message", handleMessage);
+    
+      return () => {
+        socketInstance.off("connect", handleConnect);
+        socketInstance.off("get-users", handleUsersUpdate);
+        socketInstance.off("receive-message", handleMessage);
+        console.log("Cleaning up socket listeners");
+      };
+    }, [localUser?.id,socket]);  // Only depend on localUser.id
        // Function to send a message through the socket
       const sendMessage = (message: ISendMessage) => {
         if (socket) {

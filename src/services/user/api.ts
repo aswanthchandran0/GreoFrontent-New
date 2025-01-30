@@ -42,7 +42,7 @@ API.interceptors.response.use(
       if (!refreshToken ) {
         console.log('refresh token not found');
         store.dispatch(logOut());
-        navigateTo("/auth/signin");
+        navigateTo("/get-started");
         return Promise.reject(error);
       }
 
@@ -276,4 +276,9 @@ export const NotificationUpdatingApi = async()=>{
 
 export const deleteRollApi = async(rollId:string)=>{
   return await API.delete(`/roll/${rollId}`)
+}
+
+
+export const  getUserProfiles = async(page:number,limit:number)=>{
+  return await API.get(`/profiles/${page}/${limit}`)
 }

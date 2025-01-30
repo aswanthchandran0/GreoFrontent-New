@@ -31,9 +31,21 @@ import Posts from "./components/adminComponents/postManagement/Posts";
 import ExploreScreen from "./pages/ExploreScreen";
 import ShareScreen from "./pages/ShareScreen";
 import Dashboard from "./components/adminComponents/Dashboard/Dashboard";
+import ProfilesScreen from "./pages/ProfilesScreen";
+import LandingPage from "./pages/LandingPage";
 
 
 const router = createBrowserRouter([
+  {
+    path:'/get-started',
+    element: <AuthRoute />,
+    children:[
+      {
+        index:true,
+        element:<LandingPage/>
+      }
+    ]
+  },
   {
     path: "/",
     element: <ProtectedRoute />,
@@ -76,6 +88,10 @@ const router = createBrowserRouter([
           {
             path:"p/:postId",
             element:<ShareScreen/>
+          },
+          {
+            path:"profiles",
+            element:<ProfilesScreen/>
           }
         ],
       },

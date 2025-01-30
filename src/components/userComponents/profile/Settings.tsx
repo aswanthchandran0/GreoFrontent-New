@@ -32,7 +32,7 @@ const Settings: React.FC<Props> = ({ onClose,user }) => {
   // logout handling
   const handleLogout = () => {
     dispatch(logOut());
-    navigate("/auth/signin");
+    navigate("/get-started");
   };
 
   // handle password change option

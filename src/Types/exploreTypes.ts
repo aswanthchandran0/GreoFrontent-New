@@ -15,7 +15,8 @@ export interface PostInter {
     name:string
     isBlocked?:boolean,
     isLiked?:boolean
-    // tactical
+    // TACTICAL: exploreTypes
+    userName?:string
     thumbnail?:string,
     _id?:string,
 }
@@ -37,8 +38,10 @@ export interface RollInter{
     commentCount?:number,
     isLikedByViewingUser?:boolean
     type?:string
-    isLiked?:boolean
     isSaved?:boolean
+    // TACTICAL:  opened explore 
+    isLiked?:boolean
+    user_name?:string
   }
 
   export type ExploreI = PostInter | RollInter;

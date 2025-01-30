@@ -4,11 +4,14 @@ import ExploreFeed from "../components/userComponents/explore/ExploreFeed";
 import toast from "react-hot-toast";
 import { LoaderSpinner } from "../components/ui/LoadingSpinner";
 import { ExploreI } from "../Types/exploreTypes";
+import OpenedExplore from "../components/userComponents/explore/OpenedExplore";
 
 const ExploreScreen = () => {
   const [data, setData] = useState<ExploreI[]>([]);
   const [isFetching, setIsFetching] = useState(false);
   const [hasMore, setHasMore] = useState(true); // Track if more data is available
+  const [isOpened,setIsOpened] = useState<boolean>(false)
+  const [viewingIndex,setViewingIndex]= useState<number | null>(null)
   const observerRef = useRef(null);
   const pageRef = useRef(1);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -80,8 +83,12 @@ const ExploreScreen = () => {
     };
   }, [isFetching, hasMore]);
 
-  console.log("Data:", data);
-  console.log("Page Number:", pageRef.current);
+
+  const handleOpenExplore = (index:number)=>{
+    setIsOpened(true)
+    setViewingIndex(index)
+  }
+
   return (
     <div className="flex h-full dark:bg-background-dark bg-background-light md:max-h-[90vh] max-h-[83vh]   lg:px-16 justify-center">
       <div
@@ -90,7 +97,7 @@ const ExploreScreen = () => {
       >
         {Array.isArray(data) && data.length > 0 ? (
           data.map((item, index) => (
-            <ExploreFeed item={item} index={index} key={item.id} />
+            <ExploreFeed handleOpenExplore={handleOpenExplore} item={item} index={index} key={item.id} />
           ))
         ) : (
           <div className="flex items-center justify-center ">
@@ -109,6 +116,12 @@ const ExploreScreen = () => {
           </div>
         )}
       </div>
+
+      {
+
+      isOpened &&  <OpenedExplore index={viewingIndex} data={data}  onClose={()=>setIsOpened(!isOpened)}/>
+    }
+
     </div>
   );
 };

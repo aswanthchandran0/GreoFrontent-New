@@ -95,7 +95,7 @@ const UserAnalytics = ({
         />
         {/* Icon on top of the chart */}
         <div
-          className="absolute z-10 flex items-center justify-center md:bg-white rounded-full  md:top-[95px] top-[60px]"
+          className="absolute z-10 flex items-center justify-center md:bg-white rounded-full  md:top-[70px] top-[60px]"
           style={{
             width: "120px", // Fixed size for the icon circle
             height: "120px", // Fixed size for the icon circle

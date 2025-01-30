@@ -186,6 +186,13 @@ socket?.on("receiveRemoveNotification",(removeNotification:INotification)=>{
                 />
               )}
             </div>
+
+            {/* <div className="flex flex-row items-center justify-center p-2 rounded-full shadow">
+            <UserRoundSearch
+             onClick={() =>navigate('/profiles')}
+                  className="text-sm cursor-pointer text-text-Grayish"
+            />
+           </div> */}
           </div>
         </div>
         <div className="flex lg:space-x-6 md:space-x-5">
