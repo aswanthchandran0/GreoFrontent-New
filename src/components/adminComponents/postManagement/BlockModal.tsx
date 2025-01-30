@@ -1,57 +1,42 @@
-import Modal from "react-modal";
-import { blockUserPost } from "../../../services/admin/adminApi";
-import toast from "react-hot-toast";
 import { useState } from "react";
+import { blockUserPost } from "../../../services/admin/adminApi";
 import { LoaderSpinner } from "../../ui/LoadingSpinner";
-import { IReportedPost } from "./Posts";
+import toast from "react-hot-toast";
+import Modal from "react-modal";
 
+// BlockModal.tsx
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  setReportedPosts: React.Dispatch<React.SetStateAction<IReportedPost[]>>;
   postId: string;
-  action: boolean;
+  currentStatus: boolean;
+  onSuccess: (newStatus: boolean) => void;
 }
 
 const BlockModal: React.FC<Props> = ({
   isOpen,
   onClose,
-  setReportedPosts,
   postId,
-  action,
+  currentStatus,
+  onSuccess,
 }) => {
   const [loading, setLoading] = useState(false);
-  // handle user post Block
+
   const handlePostBlock = async () => {
     try {
       setLoading(true);
-      const response = await blockUserPost(postId, action);
-      console.log("response from bloack user", response.data);
-      if (response?.data === true) {
-        setReportedPosts((prevPosts) =>
-          prevPosts.map((post) =>
-            post.postId === postId
-              ? {
-                  ...post,
-                  postDetails: {
-                    ...post.postDetails,
-                    isBlocked: action,
-                  },
-                }
-              : post
-          )
-        );
-
-        console.log("the request was reaching inside the ");
-        toast.success(`post ${action ? "blocked" : "unblocked"}`);
+      const response = await blockUserPost(postId, !currentStatus);
+      
+      if (response?.data) {
+        onSuccess(!currentStatus);
+        toast.success(`Post ${!currentStatus ? "blocked" : "unblocked"}`);
         onClose();
       } else {
-        toast.error("Failed to block/unblock post");
-        console.error("Failed to block/unblock the post.");
+        toast.error("Failed to update post status");
       }
-      onClose();
     } catch (error) {
-      console.error("Error while blocking/unblocking the post:", error);
+      console.error("Error updating post status:", error);
+      toast.error("Failed to update post status");
     } finally {
       setLoading(false);
     }
@@ -62,43 +47,43 @@ const BlockModal: React.FC<Props> = ({
       isOpen={isOpen}
       onRequestClose={onClose}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-      overlayClassName="fixed inset-0  bg-opacity-50"
+      overlayClassName="fixed inset-0"
     >
-      <div className="fixed inset-0 flex items-center justify-center ">
-        <div className="flex flex-col items-center justify-center w-full h-full max-w-md p-4 rounded shadow bg-background-light max-h-72">
-          <span className="text-xl font-bold text-text-black font-golos">{`${
-            action ? "Block" : "Unblock"
-          } Post`}</span>
-          <div className="relative flex flex-col items-center justify-center w-full h-full">
-            {loading ? (
-              <LoaderSpinner loading={loading} />
-            ) : (
-              <div className="flex flex-col items-center justify-center w-full h-full ">
-                <span className="text-text-black font-golos text-md">
-                  {`Are you sure you want to ${
-                    action ? "Block" : "Unblock"
-                  } the post?`}
-                </span>
-
-                <div className="flex flex-row space-x-3 ">
-                  <button
-                    onClick={onClose}
-                    className="p-1 px-2 bg-blue-500 rounded text-text-white hover:bg-blue-600"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handlePostBlock}
-                    className="p-1 px-2 bg-red-500 rounded text-text-white hover:bg-red-600"
-                  >{`${action ? "Block" : "Unblock"}`}</button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+      <div className="relative w-full max-w-md p-6 mx-4 bg-white rounded-lg">
+        <h2 className="mb-4 text-xl font-bold">
+          {currentStatus ? "Unblock Post" : "Block Post"}
+        </h2>
+        
+        {loading ? (
+          <LoaderSpinner loading={loading} />
+        ) : (
+          <>
+            <p className="mb-6">
+              Are you sure you want to {currentStatus ? "unblock" : "block"} this post?
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-gray-600 rounded hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePostBlock}
+                className={`px-4 py-2 text-white rounded ${
+                  currentStatus 
+                    ? "bg-green-500 hover:bg-green-600" 
+                    : "bg-red-500 hover:bg-red-600"
+                }`}
+              >
+                {currentStatus ? "Confirm Unblock" : "Confirm Block"}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </Modal>
   );
 };
 
-export default BlockModal;
+export default BlockModal

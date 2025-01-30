@@ -2,165 +2,146 @@ import { useEffect, useState } from "react";
 import { getReportedPostApi } from "../../../services/admin/adminApi";
 import { DEFAULT_PROFILE_IMAGE } from "../../../assets/images";
 import PostDetails from "./PostDetails";
-import { IPost } from "../../../Types/postTypes";
 import BlockModal from "./BlockModal";
+import { IPost } from "../../../Types/postTypes"; // Adjust import path
 import { User } from "../../../redux/slices/userSlice";
 
-
-export interface ViewPost {
-  userId: string;
+interface ReportedPost {
+  _id: string;
+  postId: string;
+  reportedCount: number;
+  createdAt: string;
   postDetails: IPost;
   userDetails: User;
-  likeCount: number;
-  commentCount: number;
   users: User[];
-}
-
-
-export interface IReportedPost{
-  _id:string,
-  userId:string,
-  postId:string,
-  reportedCount:number,
-  likeCount:number,
+  likeCount:number
   commentCount:number
-  createdAt:string
-  postDetails:IPost
-  userDetails:User
-  users:User[]
-  userName:string
 }
 
+const Posts = () => {
+  const [reportedPosts, setReportedPosts] = useState<ReportedPost[]>([]);
+  const [selectedPost, setSelectedPost] = useState<ReportedPost | null>(null);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState("");
+  const [currentAction, setCurrentAction] = useState(false);
 
-const Posts = ()=>{
+  useEffect(() => {
+    const fetchReportedPosts = async () => {
+      try {
+        const response = await getReportedPostApi();
+        setReportedPosts(response.data);
+      } catch (error) {
+        console.error("Error fetching reported posts:", error);
+      }
+    };
+    fetchReportedPosts();
+  }, []);
 
-    const [reportedPosts,setReportedPosts] = useState<IReportedPost[]>([])
-    const [isPostView,setIsPostView] = useState(false)
-    const [viewPost,setViewPost] = useState<ViewPost | null>(null)
-    const [isBlockModal,setIsBlockModal] = useState(false)
-    const [selectedPostId, setSelectedPostId] = useState<string>('');
-   const [selectedAction, setSelectedAction] = useState<boolean>(false);
-  
-  useEffect(()=>{
-    const fetchReportedPosts = async()=>{
-        const response = await getReportedPostApi()
-        setReportedPosts(response.data)
-    }
-    fetchReportedPosts()
-  },[])
+  const handleViewPost = (post: ReportedPost) => {
+    setSelectedPost(post);
+  };
 
-  console.log("reported posts",reportedPosts)
-  
-  const handlePostView = (post:IPost,user:User,likeCount:number,commentCount:number,userId:string,users:User[])=>{
-    // const Count = [...new Set(users.map(user =>user.userId))]
-    const data:ViewPost =  {
-        userId:userId,
-        postDetails:post,
-        userDetails:user,
-        likeCount:likeCount,
-        commentCount:commentCount,
-        users:users,
-        // repotedCount:Count
+  const handleBlockAction = (postId: string, isBlocked: boolean) => {
+    setSelectedPostId(postId);
+    setCurrentAction(isBlocked);
+    setShowBlockModal(true);
+  };
 
-    }
-      setViewPost(data) 
-       setIsPostView(true)
-      console.log('request was reaching inside the handle post')
-  }
+  return (
+    <div className="min-h-screen p-6 bg-gray-50">
+      <div className="max-w-6xl mx-auto">
+        <h1 className="mb-6 text-2xl font-bold text-gray-800">Reported Posts</h1>
 
-   const handleIsBlockModal = (postId:string,action:boolean)=>{
-     setSelectedPostId(postId)
-     setSelectedAction(action)
-     setIsBlockModal(!isBlockModal)
-   }
- 
-   
+        {selectedPost ? (
+  <PostDetails 
+    postData={selectedPost}
+    onClose={() => setSelectedPost(null)}
+  />
+) : (
 
-   useEffect(()=>{
-    console.log('reported posts',reportedPosts)
-   },[reportedPosts])
-    return(
-        <div className="flex flex-col items-center m-4">
-     <div className="flex items-center w-full p-2 bg-indigo-500 rounded">
-        <span className="text-xl text-text-white font-outfit"> Reported Posts</span>
-     </div>
-     
+          <div className="overflow-hidden bg-white rounded-lg shadow">
+            <div className="grid grid-cols-7 gap-4 p-4 font-medium bg-gray-100">
+              <span>No</span>
+              <span>Post Preview</span>
+              <span>User</span>
+              <span>Profile</span>
+              <span>Reports</span>
+              <span>Details</span>
+              <span>Actions</span>
+            </div>
 
-     {
-        isPostView && viewPost ?
-       <PostDetails data={viewPost} />
-        :
-
-        <div className="w-full mt-4 overflow-x-auto overflow-y-scroll ">
-        <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-md">
-          <thead>
-            <tr className="text-white bg-indigo-500">
-              <th className="px-4 py-2 text-left">No</th>
-              <th className="px-4 py-2 text-left">Post</th>
-              <th className="px-4 py-2 text-left">User Name</th>
-              <th className="px-4 py-2 text-left">User Image</th>
-              <th className="px-4 py-2 text-left">Reported Count</th>
-              <th className="px-4 py-2 text-left">View Post</th>
-              <th className="px-4 py-2 text-left">Action</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {reportedPosts.map((post, index) => (
-              <tr key={post.postId} className="border-b">
-                <td className="px-4 py-2 font-bold text-center">{index + 1}</td>
-                <td className="px-4 py-2">
-
-                <img
+            <div className="divide-y">
+              {reportedPosts.map((post, index) => (
+                <div key={post.postId} className="grid items-center grid-cols-7 gap-4 p-4 hover:bg-gray-50">
+                  <span className="text-gray-600">{index + 1}</span>
+                  
+                  <img
                     src={post.postDetails.mediaUrls[0] || DEFAULT_PROFILE_IMAGE}
-                    alt={post.userName}
-                    className="w-12 h-12 rounded"
+                    alt="Post content"
+                    className="object-cover w-16 h-16 rounded"
                   />
 
-                </td>
-                <td className="px-4 py-2">{post.userDetails.name}</td>
-                <td className="px-4 py-2">
+                  <span className="font-medium">{post.userDetails.name}</span>
+                  
                   <img
                     src={post.userDetails.profileImage || DEFAULT_PROFILE_IMAGE}
-                    alt={post.userName}
-                    className="w-12 h-12 rounded-full"
+                    alt="User profile"
+                    className="w-10 h-10 rounded-full"
                   />
-                </td>
-                <td className="px-4 py-2 font-bold text-center text-red-500 ">{[...new Set(post.users.map(user => user.id))].length}</td>
-                <td className="px-4 py-2 text-center">
-                  <button onClick={()=>handlePostView(post.postDetails,post.userDetails,post.likeCount,post.commentCount,post.userId,post.users)} className="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600">
-                    view
+
+                  <span className="font-semibold text-red-500">
+                    {post.reportedCount}
+                  </span>
+
+                  <button
+                    onClick={() => handleViewPost(post)}
+                    className="font-medium text-blue-600 hover:text-blue-800"
+                  >
+                    View Details
                   </button>
-                </td>
-                <td className="px-4 py-2 text-center">
-                  
-                <button
-                      onClick={()=>handleIsBlockModal(post.postId,!post.postDetails.isBlocked)}
-                      className={`px-4 py-2 text-white rounded ${
-                        post.postDetails.isBlocked
-                          ? "bg-green-500 hover:bg-green-600"
-                          : "bg-red-500 hover:bg-red-600"
-                      }`}
-                    >
-                      {post.postDetails.isBlocked ? "Unblock" : "Block"}
-                    </button>
 
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  <button
+                    onClick={() => handleBlockAction(post.postId, post.postDetails.isBlocked)}
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      post.postDetails.isBlocked
+                        ? "bg-green-100 text-green-800 hover:bg-green-200"
+                        : "bg-red-100 text-red-800 hover:bg-red-200"
+                    }`}
+                  >
+                    {post.postDetails.isBlocked ? "Unblock" : "Block"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+{showBlockModal && (
+  <BlockModal
+    isOpen={showBlockModal}
+    onClose={() => setShowBlockModal(false)}
+    postId={selectedPostId}
+    currentStatus={currentAction}
+    onSuccess={(newStatus) => {
+      setReportedPosts(posts =>
+        posts.map(post =>
+          post.postId === selectedPostId
+            ? {
+                ...post,
+                postDetails: {
+                  ...post.postDetails,
+                  isBlocked: newStatus
+                }
+              }
+            : post
+        )
+      );
+    }}
+  />
+)}
       </div>
+    </div>
+  );
+};
 
-     }
-
-     {
-      isBlockModal && <BlockModal isOpen={isBlockModal} onClose={()=>setIsBlockModal(false)}  setReportedPosts={setReportedPosts} postId={selectedPostId} action={selectedAction} />
-     }
-    
-        </div>
-    )
-
-}
-
-export default Posts
+export default Posts;

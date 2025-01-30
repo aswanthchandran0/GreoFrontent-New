@@ -1,195 +1,190 @@
+// PostDetails.tsx
 import React, { useEffect, useState } from "react";
-import { DEFAULT_PROFILE_IMAGE } from "../../../assets/images"
-import { FaRegHeart } from "react-icons/fa";
-import { FaRegComment } from "react-icons/fa";
+import { DEFAULT_PROFILE_IMAGE } from "../../../assets/images";
+import { FaRegHeart, FaRegComment, FaArrowLeft } from "react-icons/fa";
 import UserDetails from "../userManagement/UserDetails";
-import { getStackOfUsersApi } from "../../../services/admin/adminApi";
-import {  ViewPost } from "./Posts";
 import { User } from "../../../redux/slices/userSlice";
+import { getStackOfUsersApi } from "../../../services/admin/adminApi";
 
-interface Props{
-  data:ViewPost | null
+interface ReportedPost {
+  _id: string;
+  postId: string;
+  reportedCount: number;
+  createdAt: string;
+  postDetails: any;
+  userDetails: User;
+  users: User[];
+  likeCount:number
+  commentCount:number
 }
-const PostDetails:React.FC<Props> = ({data})=>{
-  console.log("data in post details",data)
-   const [UserDetailsComponent,setUserDetailsComponent] = useState(false)
-   const [userDetailsWithReasons, setUserDetailsWithReasons] = useState([]);
-   const [loading, setLoading] = useState(true);
-   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-    
- console.log('data',data)
-  console.log('loading',loading)
 
-  useEffect(() => {
-    const fetchUserDetails = async () => {
-      try {
-        const userIds = data?.users.map((user) => user.id);
-        const response = await getStackOfUsersApi(userIds ?? []);
-        const userDetails = response.data;
-        
-        const mergedData = userDetails.map((userDetail:User) => {
-          const reasonData = data?.users.find(
-            (user) => user.id === userDetail._id // Match IDs
-          );
-          return {
-            ...userDetail,
-            reason: reasonData?.reason || "Unknown reason", // Include reason
-          };
-        });
+interface PostDetailsProps {
+  postData: ReportedPost;
+  onClose: () => void;
+}
 
-        setUserDetailsWithReasons(mergedData);
-      } catch (error) {
-        console.error("Error fetching user details:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserDetails();
-  }, [data]);
-
-
-
-  const handleViewUserDetails = (userId:string) => {
-    setSelectedUserId(userId); // Set the selected userId for viewing details
-    setUserDetailsComponent(true); // Show the user details component
-  };
-
-    return (
-        <div className="flex flex-col items-center w-full shadow md:m-2 ">
-
-{
-UserDetailsComponent ?
-<UserDetails close={setUserDetailsComponent} userId={selectedUserId ?? ''}/>
-:
-<>
-
-<div className="flex flex-row w-full rounded shadow bg-background-light h-44 ">
-  <div className="flex flex-row items-center justify-center w-1/4 bg-blue-500 rounded-l" >
+const PostDetails: React.FC<PostDetailsProps> = ({ postData, onClose }) => {
+  const [showUserDetails, setShowUserDetails] = useState<boolean>(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [reportingUsers, setReportingUsers] = useState<{ [key: string]: User }>({}); 
+ 
+  console.log("postData.userDetails",postData.userDetails)
+  const fetchUserDetails = async () => {
+    if (!postData?.users.length) return;
   
-  {/* <!-- Reports Section --> */}
-  <div className="flex flex-col items-center justify-center">
-    <span className="text-sm font-bold text-text-white">Reports</span>
-    <span className="text-4xl font-bold text-text-white">{userDetailsWithReasons.length || 0}</span>
-  </div>
-  </div>
-
-  {/* <!-- Table Section --> */}
-  <div className="flex-1 overflow-auto">
-    <table className="w-full border border-collapse border-gray-200 rounded-lg table-auto">
-      <thead>
-        <tr className="text-white bg-indigo-500">
-          <th className="px-4 py-2 text-left">Users</th>
-          <th className="px-4 py-2 text-left">Reason</th>
-          <th className="px-4 py-2 text-left">Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr className="border-b">
-          {
-            userDetailsWithReasons && userDetailsWithReasons.map((user:User)=>(
-              <>
-<td className="px-4 py-2">{user?.name}</td>
-<td className="px-4 py-2">{user.reason}</td>
-          <td
-           onClick={() => handleViewUserDetails(user._id ?? '')}
-          className="px-4 py-2">
-            <button  className="px-2 py-1 text-white bg-blue-500 rounded hover:bg-blue-600">
-              view
-            </button>
-          </td>
-              </>
-            ))
-          }
-        </tr>
-      </tbody>
-    </table>
-  </div>
+    try {
+      const userIds = postData.users.map((user) => user.id); // Extract user IDs
+      const response = await getStackOfUsersApi(userIds); // Fetch user details
   
-  <div>
-
-  </div>
-</div>
-<div className="flex flex-col items-center w-full shadow md:m-2 md:flex-row">
-<div className="flex flex-col items-center w-1/2 m-2 ">
-
-
-<div className="flex flex-col space-y-2">
-  <div className="flex w-full h-full overflow-hidden rounded cursor-pointer max-w-96 max-h-96">
-    <img className="flex object-cover w-full h-full" src={data?.postDetails.mediaUrls[0]} alt="" />
-  </div>
-
+      // Convert the response array into an object for easy access by ID
+      const userMap = response.data.reduce((acc: { [key: string]: User }, user: User) => {
+        acc[user._id || ''] = user;
+        return acc;
+      }, {});
   
-  <div className="flex flex-row justify-center w-full gap-5 p-2 rounded shadow">
-  <div className="flex flex-col items-center justify-center">
-    <FaRegHeart className="text-2xl text-indigo-500"/>
-    <span className="font-semibold text-indigo-500 font-golos">{data?.likeCount || 0}</span>
-  </div>
-
-  <div className="flex flex-col items-center justify-center">
-  <FaRegComment  className="text-2xl text-indigo-500"/>
-    <span className="font-semibold text-indigo-500 font-golos">{data?.commentCount || 0}</span>
-  </div>
-
+      // Merge reason from postData.users into the fetched user details
+      const mergedUsers = postData.users.reduce((acc: { [key: string]: User & { reason?: string } }, user) => {
+        if (userMap[user.id]) {
+          acc[user.id] = { ...userMap[user.id], reason: user.reason }; // Add reason
+        } else {
+          acc[user.id] = { ...user, profileImage: DEFAULT_PROFILE_IMAGE }; // Fallback if not found
+        }
+        return acc;
+      }, {});
   
-  
-  </div >
-  <div className="flex flex-row justify-center w-full p-2 bg-indigo-500 rounded shadow">
-  <div className="flex flex-col w-full p-2 ">
-  <span className="text-lg font-semibold text-text-white">Description</span>
-  <span className="font-semibold text-text-white">{data?.postDetails.content}</span>
-  </div>
-  {/* <div className="flex items-center justify-center h-full p-2">
-    <button className="w-full h-full px-4 font-bold text-indigo-500 rounded bg-background-light">view</button>
-    </div> */}
-  </div>
-  
-  </div>
-</div>
-
-
-<div className="flex flex-col items-center w-1/2 ">
-
-<div className="flex flex-col space-y-2">
-<div className="flex w-full h-full overflow-hidden rounded cursor-pointer max-w-96 max-h-96">
-    <img className="flex object-cover w-full h-full" src={data?.userDetails.profileImage || DEFAULT_PROFILE_IMAGE} alt="" />
-  </div>
-
-  <div className="flex flex-row justify-center w-full bg-indigo-500 rounded shadow">
-    <div className="flex flex-col w-full p-2 ">
-    <span className="font-semibold text-text-white">Name: {data?.userDetails.name}</span>
-  <span className="font-semibold text-text-white ">Username: {data?.userDetails.user_name}</span>
-  <span className="font-semibold text-text-white ">Bio: {data?.userDetails.bio || "empty"}</span>
-    </div>
-    <div className="flex items-center justify-center h-full p-2">
-    <button  onClick={() => handleViewUserDetails(data?.userId ?? '')} className="w-full h-full px-4 font-bold text-indigo-500 rounded bg-background-light">view</button>
-    </div>
-  </div>
-{/* 
-  <div className="flex flex-row justify-center w-full gap-5 p-2 rounded shadow">
-  <div className="flex flex-col items-center justify-center">
-  <span className="font-semibold text-text-black font-golos">followers</span>
-    <span className="font-semibold text-indigo-500 font-golos">0</span>
-    </div>
-    
-    <div className="flex flex-col items-center justify-center">
-    <span className="font-semibold text-text-black font-golos">following</span>
-    <span className="font-semibold text-indigo-500 font-golos">0</span>
-  </div>
-  
-  <div className="flex flex-col items-center justify-center">
-  <span className="font-semibold text-text-black font-golos">posts</span>
-  <span className="font-semibold text-indigo-500 font-golos">0</span>
-  </div>
-  
-  </div> */}
-  </div>
-</div>
-</div>
-</>
+      setReportingUsers(mergedUsers);
+    } catch (error) {
+      console.error("Error fetching user details:", error);
     }
-        </div>
-    )
-}
+  };
+  
+  useEffect(() => {
+    fetchUserDetails();
+  }, [postData]);
 
-export default PostDetails
+  
+  return (
+    <div className="w-full p-6 bg-gray-100 rounded-lg">
+      <button
+        onClick={onClose}
+        className="flex items-center mb-6 text-gray-600 hover:text-gray-800"
+      >
+        <FaArrowLeft className="mr-2" /> Back to Reports
+      </button>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Post Section */}
+        <div className="p-4 bg-white rounded-lg shadow">
+          <h2 className="mb-4 text-xl font-bold">Post Details</h2>
+          
+          <div className="mb-4">
+            <img
+              src={postData.postDetails.mediaUrls[0] || DEFAULT_PROFILE_IMAGE}
+              alt="Post content"
+              className="object-cover w-full rounded-lg h-96"
+            />
+          </div>
+
+          <div className="flex gap-4 mb-4">
+            <div className="flex items-center">
+              <FaRegHeart className="mr-2 text-red-500" />
+              <span>{postData?.likeCount || 0}</span>
+            </div>
+            <div className="flex items-center">
+              <FaRegComment className="mr-2 text-blue-500" />
+              <span>{postData?.commentCount || 0}</span>
+            </div>
+          </div>
+
+          <div className="p-4 rounded bg-gray-50">
+            <h3 className="mb-2 font-semibold">Description</h3>
+            <p>{postData.postDetails.content || "No description"}</p>
+          </div>
+        </div>
+
+        {/* User and Reports Section */}
+        <div className="space-y-6">
+          {/* Post Author */}
+          <div className="p-4 bg-white rounded-lg shadow">
+            <h2 className="mb-4 text-xl font-bold">Post Author</h2>
+            <div className="flex items-center gap-4">
+              <img
+                src={postData.userDetails.profileImage || DEFAULT_PROFILE_IMAGE}
+                alt="Author profile"
+                className="w-16 h-16 rounded-full"
+              />
+              <div>
+                <h3 className="font-semibold">{postData.userDetails.name}</h3>
+                <p className="text-gray-600">@{postData.userDetails.user_name}</p>
+                {/* <button
+                  onClick={() => {
+                    setSelectedUserId(postData.userDetails._id ||'');
+                    setShowUserDetails(true);
+                  }}
+                  className="mt-2 text-sm text-blue-500 hover:underline"
+                >
+                  View Profile
+                </button> */}
+              </div>
+            </div>
+          </div>
+
+          {/* Reporting Users */}
+          <div className="p-4 bg-white rounded-lg shadow">
+            <h2 className="mb-4 text-xl font-bold">
+              Reports ({postData.reportedCount})
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left">User</th>
+                    <th className="px-4 py-2 text-left">Reason</th>
+                    <th className="px-4 py-2 text-left">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                {Object.values(reportingUsers).map((user) => (
+                    <tr key={user._id} className="border-t">
+                      <td className="px-4 py-2">
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={user.profileImage || DEFAULT_PROFILE_IMAGE}
+                            alt="Reporter profile"
+                            className="w-8 h-8 rounded-full"
+                          />
+                          <span>{user.user_name}ee</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-2">{(user as any).reason}</td>
+                      <td className="px-4 py-2">
+                        <button
+                          onClick={() => {
+                            setSelectedUserId(user._id || null);
+                            setShowUserDetails(true);
+                          }}
+                          className="text-sm text-blue-500 hover:underline"
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {showUserDetails && selectedUserId && (
+        <UserDetails
+        userId={selectedUserId}
+        close={setShowUserDetails}
+        />
+      )}
+    </div>
+  );
+};
+
+export default PostDetails;
