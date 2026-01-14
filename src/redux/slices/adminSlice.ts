@@ -16,7 +16,7 @@ export const adminAuthenticate = createAsyncThunk(
      try{
         const response = await adminSigninApi(adminData.email,adminData.password)
         console.log('response',response)
-        tokenService.setAdminToken(response.data.token.accessToken)
+        tokenService.setAdminToken(response.data.accessToken)
         return response.data.admin
      }catch(error){
         toast.error("invalid credential")

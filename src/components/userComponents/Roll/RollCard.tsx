@@ -1,473 +1,467 @@
-import ReadMoreAndLess from 'react-read-more-read-less';
-import { FaRegHeart } from "react-icons/fa";
-import { FaHeart } from "react-icons/fa";
-import { FaRegComment } from "react-icons/fa";
+import { FaRegHeart, FaHeart, FaRegComment } from "react-icons/fa";
 import { IoIosShareAlt } from "react-icons/io";
-// import { IoBookmarkOutline } from "react-icons/io5";
-// import { IoBookmark } from "react-icons/io5";
-import { IRoll } from '../profile/UserPosts';
+import { IoBookmark, IoBookmarkOutline, IoClose } from "react-icons/io5";
+import { HiSpeakerWave, HiSpeakerXMark } from "react-icons/hi2";
+import { BsThreeDots } from "react-icons/bs";
 import { useEffect, useRef, useState } from 'react';
-import { HiSpeakerWave, HiSpeakerXMark } from 'react-icons/hi2';
-import { DEFAULT_PROFILE_IMAGE } from '../../../assets/images';
 import { useNavigate } from 'react-router-dom';
-import { CommentsDto } from '../../../Types/commentTypes';
-import { deleteNotification, deleteSavedItemApi, likeRollApi, rollCommentSentAPi, rollGetCommentsApi, saveItemApi, saveNotification } from '../../../services/user/api';
-import Comment from '../post/Comment';
-import { IoBookmark, IoBookmarkOutline, IoClose } from 'react-icons/io5';
-import { SavedItemArrayElement } from '../../../Types/savedItemTypes';
-import toast from 'react-hot-toast';
-import { RootState } from '../../../redux/store';
 import { useSelector } from 'react-redux';
-import { useSocket } from '../../../context/SocketContext';
+import toast from 'react-hot-toast';
+import { IRoll } from '../profile/UserPosts';
+import { IComment } from '../../../Types/commentTypes';
+import { DEFAULT_PROFILE_IMAGE } from '../../../assets/images';
+import { deleteSavedItemApi, getCommentsApi, postCommentApi, toggleLikeApi, saveItemApi } from '../../../services/user/api';
+import { SavedItemArrayElement } from '../../../Types/savedItemTypes';
+import { RootState } from '../../../redux/store';
+import Comment from '../post/Comment';
+import SharingOption from "../post/SharingOption";
+import { ClipLoader } from "react-spinners";
+import CommentsModal from "../comment/CommentsModal";
 
-interface RollCardProps{
-   roll:IRoll,
-   isAudioOn:boolean
-   handleIsAudioOn:()=>void
-   setRolls: React.Dispatch<React.SetStateAction<IRoll[]>>;
+interface RollCardProps {
+  roll: IRoll;
+  isAudioOn: boolean;
+  handleIsAudioOn: () => void;
+  setRolls: React.Dispatch<React.SetStateAction<IRoll[]>>;
 }
-const RollCard:React.FC<RollCardProps> = ({roll,isAudioOn,handleIsAudioOn,setRolls})=>{
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const [isVideoInView,setIsVideoInview]=  useState(false)
+
+const RollCard: React.FC<RollCardProps> = ({ roll, isAudioOn, handleIsAudioOn, setRolls }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isVideoInView, setIsVideoInview] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [comment, setComment] = useState<string>("");
-  const [comments, setComments] = useState<CommentsDto | null>(null);
+  const [comments, setComments] = useState<IComment[]>([]);
   const [commentsCount, setCommentsCount] = useState<number>(roll.commentCount || 0);
-  const [loading,setLoading] = useState<boolean>(false)
-  const [localIsLiked, setLocalIsLiked] = useState<boolean>(roll?.isLikedByViewingUser ?? false);
-  const myId = useSelector((state:RootState)=> state.UserReducer.user?.id)
-  const navigate = useNavigate()
-  const {socket} = useSocket()
-  
-  useEffect(()=>{
-    const observer = new IntersectionObserver((entries)=>{
-       entries.forEach((entry)=>{
-        if(entry.isIntersecting){
-          setIsVideoInview(true)
-        }else{
-          setIsVideoInview(false)
-        }
-       },)
-       
-       
-    },
-  {threshold:0.5}
-  )
+  const [loading, setLoading] = useState<boolean>(false);
+  const [localIsLiked, setLocalIsLiked] = useState<boolean>(roll.isLiked);
+  const [likeCount, setLikeCount] = useState<number>(roll.likeCount || 0);
+  const [isSharing, setIsSharing] = useState<boolean>(false);
+  const [isRollMenuOpen, setIsRollMenuOpen] = useState<boolean>(false);
+  const [showLikeAnimation, setShowLikeAnimation] = useState(false);
 
-  if(videoRef.current){
-    observer.observe(videoRef.current)
-    
-  }
-    return ()=>{
+  const loggedUser = useSelector((state: RootState) => state.UserReducer.user);
+  const navigate = useNavigate();
+
+  // Video intersection observer for autoplay
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          setIsVideoInview(entry.isIntersecting);
+          if (entry.isIntersecting && videoRef.current) {
+            videoRef.current.play().catch(console.error);
+          } else if (videoRef.current) {
+            videoRef.current.pause();
+          }
+        });
+      },
+      { threshold: 0.8 } // Higher threshold for better visibility
+    );
+
+    if (videoRef.current) {
+      observer.observe(videoRef.current);
+    }
+
+    return () => {
       if (videoRef.current) {
         observer.unobserve(videoRef.current);
       }
-    }
-  },[])
+    };
+  }, []);
 
-
-  // comment handling 
-
-
+  // Fetch comments
   useEffect(() => {
-    if (showComments) {
-      const fetchComments = async () => {
-        try {
-          const response = await rollGetCommentsApi(roll._id);
-          setComments(response.data[0]);
-          setCommentsCount(response.data[0]?.comments?.length || 0);
-        } catch (err) {
-          console.error("Error fetching comments:", err);
-        }
-      };
-      fetchComments();
-    }
-  }, [showComments, roll]);
+    const fetchComments = async () => {
+      try {
+        const response = await getCommentsApi(roll.id ?? "", "reel");
+        const commentsArray: IComment[] = Array.isArray(response.data)
+          ? response.data
+          : [response.data];
+        setComments(commentsArray);
+      } catch (err) {
+        console.log('Error fetching comments:', err);
+      }
+    };
+    fetchComments();
+  }, [roll.id]);
 
-  const handleAddComment = (newComment: any) => {
-    if (comments) {
-      const updatedComments = { ...comments };
-      updatedComments.comments.unshift(newComment);
-      setComments(updatedComments);
-      setCommentsCount((prevCount) => prevCount + 1);
-    }
+  // Add new comment
+  const handleAddComment = (newComment: IComment) => {
+    setComments(prev => [newComment, ...prev]);
   };
-  
+
+  // Post comment
   const handleCommentPost = async () => {
+    if (!comment.trim()) {
+      toast.error("Comment cannot be empty");
+      return;
+    }
+
     try {
-      const response = await rollCommentSentAPi(roll._id, comment);
+      const response = await postCommentApi(roll?.id ?? '', 'reel', comment);
+      response.data.profileImage = loggedUser?.profileImage;
+      response.data.username = loggedUser?.username;
       handleAddComment(response.data);
-      setComment("");
-       // comment notifying 
-        const NotifcationMessage = 'commented on your roll'
-    const SaveNotificatonResponse =    await saveNotification(roll.userId,roll?._id,'',NotifcationMessage,"comment")
-
-       if(SaveNotificatonResponse.data){
-        socket?.emit("sendNotification",SaveNotificatonResponse.data)
-       }
-
+      setComment('');
+      setCommentsCount(prev => prev + 1);
+      toast.success('Comment posted');
     } catch (err) {
-      console.error("Error posting comment:", err);
+      console.log('Error posting comment:', err);
+      toast.error('Failed to post comment');
     }
   };
 
-
-  // handle roll Saving
-
-
-
-    const handleRollSaving = async(item:SavedItemArrayElement)=>{
-      try{
-       const response =   await saveItemApi(item)
-       if(response.data == null){
-        toast("already saved")
-       }else{
-        setRolls((prevRolls) =>
-          prevRolls.map((roll) =>
-            roll._id === item.itemId
+  // Save roll
+  const handleRollSaving = async (item: SavedItemArrayElement) => {
+    try {
+      const response = await saveItemApi(item);
+      if (response.data == null) {
+        toast("Already saved");
+      } else {
+        setRolls(prevRolls =>
+          prevRolls.map(roll =>
+            roll.id === item.itemId
               ? { ...roll, isSaved: true }
               : roll
           )
         );
-        toast.success('saved')
-       }
-      }catch(err){
-        console.log('error',err)
-        toast.error("something went wrong in saving post")
+        toast.success('Saved');
       }
+    } catch (err) {
+      console.log('Error saving roll:', err);
+      toast.error("Something went wrong in saving reel");
     }
-  
-  
-    // unSave post 
-  
-    // Add this function inside the Post component
+  };
+
+  // Unsave roll
   const handleUnsaveRoll = async (itemId: string) => {
     try {
       const response = await deleteSavedItemApi(itemId, "roll");
-      if (response.status === 200) { // Assuming 200 means success
-        setRolls((prevRolls) =>
-          prevRolls.map((roll) =>
-            roll._id === itemId
+      if (response.status === 200) {
+        setRolls(prevRolls =>
+          prevRolls.map(roll =>
+            roll.id === itemId
               ? { ...roll, isSaved: false }
               : roll
           )
         );
-        toast.success("unsaved");
+        toast.success("Unsaved");
       }
     } catch (error) {
-      console.error("Failed to unsave post:", error);
-      toast.error("Failed to unsave post. Please try again.");
+      console.error("Failed to unsave roll:", error);
+      toast.error("Failed to unsave reel");
     }
   };
 
-  
+  // Like animation
+  const triggerLikeAnimation = () => {
+    setShowLikeAnimation(true);
+    setTimeout(() => setShowLikeAnimation(false), 800);
+  };
 
-  // onlike toggle  
+  // Like/unlike roll
   const onLikeToggle = async () => {
+    if (loading) return;
+    setLoading(true);
+
     try {
-      setLoading(true)
-      let response;
-      if (localIsLiked) {
-        // If the post is currently liked, call the API to unlike
-        response = await likeRollApi([], [roll._id]);
-         console.log("respones from the like roll api",response.data)
-         console.log("rolls in there",roll)
-        if (response.status === 200) {
-          setLocalIsLiked(false);
-          setRolls((prevRolls) =>
-            prevRolls.map((r) =>
-              r._id === roll._id
-                ? { ...r, isLiked: false, likeCount: r?.likeCount - 1}
-                : r
-            )
-          );
-  
-                
-          // removing the notification when user unlike the post
-          const notificationResponse = await deleteNotification(roll._id,roll.userId,'roll')
-          console.log("delte notificatoin response",notificationResponse)
-          if(notificationResponse.data ==true){
-            const notificationData = {
-              userId:roll.userId,
-              entityId:roll._id,
-              initiatorId:myId,
-              type:'roll'
-            }
-          
-            socket?.emit("removeNotification",notificationData)
-          }
-        
-        }
-      } else {
-        // If the post is currently unliked, call the API to like
-        response = await likeRollApi([roll._id], []);
-        console.log('rolll like response ',response)
-        if (response.status === 200) {
-          setLocalIsLiked(true);
-          setRolls((prevPosts) =>
-            prevPosts.map((p) =>
-              p._id === roll._id
-                ? { ...p, isLiked: true, likeCount: p?.likeCount + 1 }
-                : p
-            )
-          );
-         
-  
-            // notifiying other  user post was liked 
-    
-            const notificationMessage = 'liked your roll'
-            const SaveNotificatonResponse = await saveNotification(roll.userId,roll._id,'',notificationMessage,"roll")
-                  console.log("save notification response",SaveNotificatonResponse)
-               if(SaveNotificatonResponse.data){
-                socket?.emit("sendNotification",SaveNotificatonResponse.data)
-               }
-  
-         
-        }
+      const response = await toggleLikeApi(roll.id ?? "", "reel");
+      const { liked, totalLikes } = response.data;
+
+      setLocalIsLiked(liked);
+      setLikeCount(totalLikes);
+
+      // Update rolls list
+      setRolls(prevRolls =>
+        prevRolls.map(r =>
+          r.id === roll.id
+            ? { ...r, isLiked: liked, likeCount: totalLikes }
+            : r
+        )
+      );
+
+      // Animation effect
+      if (liked && !roll.isLiked) {
+        triggerLikeAnimation();
       }
-  
-      console.log('Response from like API:', response);
-    } catch (error) {
-      console.error('Error in like/unlike toggle:', error);
-    }finally{
-      setLoading(false)
+
+    } catch (err) {
+      console.error("Failed to toggle like:", err);
+      toast.error("Failed to update like status");
+    } finally {
+      setLoading(false);
     }
   };
-  
 
-
-    return(
-        <>
-        <div className='flex flex-row shadow-md'>
-
-        
-<div className="relative w-[351.84px] h-[625.50px] ">
- <video
- className="object-cover w-full h-full rounded"
- ref={videoRef}
- src={isVideoInView ? roll.mediaUrl : ""}
- autoPlay
- loop
- muted={!isAudioOn}
- ></video>
-
- <div className="absolute bottom-0 left-0 p-4 ">
-   <div className="flex flex-col">
-<div className="flex flex-row items-center gap-2">
-    <div className="w-10 h-10 overflow-hidden rounded-full cursor-pointer">
-        <img className="w-full h-full" src={roll.profileImage || DEFAULT_PROFILE_IMAGE} alt="" />
-    </div>
-   <span onClick={()=>navigate(`/profile/${roll.userName}`)} className="cursor-pointer text-text-white font-golos">{roll.userName}</span>
-   {/* <button className="p-1 text-sm font-bold border rounded text-text-white font-gaolos ">Follow</button> */}
-</div>
-
-<div className='flex cursor-pointer min-w-80 text-text-white font-outfit'>
-<ReadMoreAndLess
-
-charLimit={40}
-moreText='...more'
-lessText='show less'
-readMoreClassName='text-text-white font-golos text-sm '
-readLessClassName='text-text-white font-golos text-sm'
-      >
-{roll.content}
-           
-      </ReadMoreAndLess> 
-    
-</div>
-
-<div className='absolute right-0 flex flex-col p-4 py-5 mt-auto space-y-3 bottom-12 sm:hidden'>
-  <div className='flex flex-col items-center justify-center font-bold cursor-pointer text-text-white font-golos'>
-    {
-      roll.isLikedByViewingUser ?
-      <FaHeart  onClick={onLikeToggle} className='text-2xl text-red-500'/>
-      :
-      <FaRegHeart  onClick={onLikeToggle} className='text-2xl '/>
-
+  // Double tap to like
+  const handleDoubleTap = () => {
+    if (!localIsLiked) {
+      onLikeToggle();
     }
-   <span>{roll.likeCount}</span>
-  </div>
+  };
 
-  <div  onClick={() => setShowComments(!showComments)} className='flex flex-col items-center justify-center font-bold cursor-pointer text-text-white font-golos'>
-   <FaRegComment  className='text-2xl '/>
-   <span>{commentsCount}</span>
-  </div>
+  // Navigate to profile
+  const handleProfileNavigation = () => {
+    navigate(`/profile/${roll.username}`);
+  };
 
-  <div className='flex flex-col items-center justify-center font-bold cursor-pointer text-text-white font-golos'>
-   <IoIosShareAlt className='text-2xl '/>
-  </div>
-
-  <div className='flex flex-col items-center justify-center font-bold cursor-pointer text-text-white font-golos'>
-      {
-                  roll.isSaved ?
-                  <IoBookmark  onClick={() => handleUnsaveRoll(roll._id)} className="text-2xl cursor-pointer dark:text-text-white text-text-charcoal"/>
-                  :
-  <IoBookmarkOutline onClick={()=>handleRollSaving({itemId:roll._id,type:"roll"})} className='text-2xl ' />
-      }
-  </div>
-
-  <div className='flex flex-col items-center justify-center font-bold cursor-pointer text-text-white font-golos'>
-  {
-              isAudioOn?
-              <HiSpeakerWave onClick={handleIsAudioOn}  className='text-2xl cursor-pointer' />
-              :
-              <HiSpeakerXMark onClick={handleIsAudioOn}  className='text-2xl cursor-pointer' />
-  
-          }
-  </div>
-</div>
-   </div>
- </div>
-</div>
-
-<div className='flex-col hidden p-4 py-5 mt-auto space-y-3 sm:flex'>
-  <div className='flex flex-col items-center justify-center cursor-pointer dark:text-text-white'>
-   {localIsLiked ? (
-        <FaHeart 
-          className={`text-2xl cursor-pointer text-red-500 ${loading ? 'animate-ping' : ''}`} 
-          onClick={!loading ? onLikeToggle : undefined} // Disable onClick if loading
-        />
-      ) : (
-        <FaRegHeart 
-          className={`text-2xl cursor-pointer dark:text-text-white text-text-charcoal ${loading ? 'animate-ping' : ''}`} 
-          onClick={!loading ? onLikeToggle : undefined} // Disable onClick if loading
-        />
-      )}
-
-{!loading && (
-   <span>{roll.likeCount}</span>
-  )}
-  </div>
-
-  <div  onClick={() => setShowComments(!showComments)} className='dark:text-text-white'>
-   <FaRegComment className='text-2xl cursor-pointer'/>
-   <span>{commentsCount}</span>
-  </div>
-
-  <div className='dark:text-text-white'>
-   <IoIosShareAlt className='text-2xl cursor-pointer'/>
-  </div>
-
-  <div className='dark:text-text-white'>
-
-  {
-                  roll.isSaved ?
-                  <IoBookmark  onClick={() => handleUnsaveRoll(roll._id)} className='text-2xl cursor-pointer'/>
-                  :
-              <IoBookmarkOutline onClick={()=>handleRollSaving({itemId:roll._id,type:"roll"})} className='text-2xl cursor-pointer' />
-      }
+  return (
+    <>
+      <div className="relative w-full max-w-lg mx-auto h-full flex items-center justify-center">
+        
+        {/* Video Container - Centered */}
+        <div className="relative w-full max-w-md aspect-[9/16] bg-black rounded-xl overflow-hidden shadow-2xl">
+          <video
+            ref={videoRef}
+            className="absolute inset-0 w-full h-full object-cover"
+            src={isVideoInView ? roll.mediaUrl : ""}
+            autoPlay
+            loop
+            muted={!isAudioOn}
+            playsInline
+            controls={false}
+            onClick={handleDoubleTap}
+          />
+          
+          {/* Like Animation on Double Tap */}
+          {showLikeAnimation && (
+            <div className="absolute inset-0 flex items-center justify-center z-10">
+              <FaHeart className="w-32 h-32 text-red-500 opacity-80 animate-ping" />
             </div>
-
-  <div className='dark:text-text-white'>
-   {
-              isAudioOn?
-              <HiSpeakerWave onClick={handleIsAudioOn}  className='text-2xl cursor-pointer' />
-              :
-              <HiSpeakerXMark onClick={handleIsAudioOn}  className='text-2xl cursor-pointer' />
-  
-          }
-           </div>
-</div>
-
-  {/* Comment Section */}
-
-   {/* <div className="flex flex-row items-center w-full gap-2 p-2 border-b border-text-charcoal">
-            <div className="w-12 h-12 overflow-hidden rounded-full">
-              <img  className="object-cover w-full h-full cursor-pointer" src={roll.profileImage || DEFAULT_PROFILE_IMAGE} alt="" />
-            </div>
-            <span onClick={()=>navigate(`profile/${roll.userName}`)} className="cursor-pointer text-text-white">
-              {roll.userName}
-            </span>
-            <IoClose
-              onClick={() => setShowComments(!showComments)}
-              className="ml-auto text-xl cursor-pointer text-text-white" />
-          </div> */}
-
-  {showComments && (
-        // <div className="p-4 mt-2 rounded-md bg-background-dark">
-        //   <div className="space-y-2 overflow-y-auto max-h-60">
-        //     {comments?.comments.map((comment, index) => (
-        //       <Comment key={index} comment={comment} />
-        //     ))}
-        //   </div>
-        //   <div className="flex items-center mt-2 space-x-2">
-        //     <input
-        //       value={comment}
-        //       onChange={(e) => setComment(e.target.value)}
-        //       onKeyDown={(e) => e.key === "Enter" && handleCommentPost()}
-        //       className="flex-grow p-2 outline-none bg-background-dark text-text-white"
-        //       placeholder="Add a comment..."
-        //     />
-        //     <button onClick={handleCommentPost} className="text-blue-500 font-golos">
-        //       Post
-        //     </button>
-        //   </div>
-        // </div>
-
-
-        <div className="flex flex-col w-full md:w-3/5 ">
-        {/* header */}
-        <div className="flex flex-row items-center w-full gap-2 p-2 border-b border-text-charcoal">
-          <div className="w-12 h-12 overflow-hidden rounded-full">
-            <img  className="object-cover w-full h-full cursor-pointer" src={roll.profileImage || DEFAULT_PROFILE_IMAGE} alt="" />
-          </div>
-          <span onClick={()=>navigate(`profile/${roll.userName}`)} className="font-semibold font-bold cursor-pointer text-text-black dark:text-text-white">
-            {roll.userName}
-          </span>
-          <IoClose
-            onClick={() => setShowComments(!showComments)}
-            className="ml-auto text-xl cursor-pointer text-text-black dark:text-text-white" />
-        </div>
-
-        {/* comment box */}
-
-        <div className="w-full p-2 space-y-5 overflow-y-auto h-96 scrollbar-hide ">
-           {
-            comments?.comments.map((comment,index)=>{
-              return(
-              <Comment key={index} comment={comment} />
-              )
-            })
-           }
-        </div>
-        {/* end comment box*/}
-
-        {/* footer side */}
-        <div className="flex flex-col items-center justify-between w-full mt-auto border-t border-text-charcoal">
-          {/* post details */}
-          <div className="flex flex-row items-center justify-between w-full p-2">
-
-            <div className="flex flex-row items-center p-1 space-x-3">
-
-              <div className="flex flex-col items-center justify-center">
+          )}
+          
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+          
+          {/* Top Bar */}
+          <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-2 text-white bg-black/40 rounded-full hover:bg-black/60 transition-all duration-200 backdrop-blur-sm"
+              aria-label="Go back"
+            >
+              ←
+            </button>
             
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleIsAudioOn}
+                className="p-2 text-white bg-black/40 rounded-full hover:bg-black/60 transition-all duration-200 backdrop-blur-sm"
+                aria-label={isAudioOn ? "Mute sound" : "Unmute sound"}
+              >
+                {isAudioOn ? (
+                  <HiSpeakerWave className="w-5 h-5" />
+                ) : (
+                  <HiSpeakerXMark className="w-5 h-5" />
+                )}
+              </button>
+              <button
+                onClick={() => setIsRollMenuOpen(true)}
+                className="p-2 text-white bg-black/40 rounded-full hover:bg-black/60 transition-all duration-200 backdrop-blur-sm"
+                aria-label="More options"
+              >
+                <BsThreeDots className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Content Overlay - Bottom */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 lg:p-6">
+            <div className="flex flex-col">
+              {/* User Info & Content */}
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <div 
+                    onClick={handleProfileNavigation}
+                    className="relative w-10 h-10 lg:w-12 lg:h-12 overflow-hidden border-2 border-white/40 rounded-full cursor-pointer hover:scale-105 transition-transform hover:border-white/80"
+                  >
+                    <img
+                      className="object-cover w-full h-full"
+                      src={roll.profileImage || DEFAULT_PROFILE_IMAGE}
+                      alt={roll.username}
+                    />
+                  </div>
+                  <div>
+                    <h3 
+                      onClick={handleProfileNavigation}
+                      className="text-base lg:text-lg font-semibold text-white cursor-pointer hover:underline"
+                    >
+                      @{roll.username}
+                    </h3>
+                    {roll.name && (
+                      <p className="text-sm text-gray-300">{roll.name}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Roll Content */}
+                {roll.content && (
+                  <div className="mb-4">
+                    <p className="text-white text-sm lg:text-base line-clamp-2">
+                      {roll.content}
+                    </p>
+                    {roll.content.length > 100 && (
+                      <button 
+                        className="mt-1 text-sm text-gray-300 hover:text-white transition-colors"
+                        onClick={() => {/* Expand functionality */}}
+                      >
+                        ...more
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Stats */}
+                <div className="flex items-center gap-4 text-sm text-gray-300 mb-4">
+                  <div className="flex items-center gap-2">
+                    <FaHeart className="w-4 h-4 text-red-400" />
+                    <span className="font-medium">{likeCount.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <FaRegComment className="w-4 h-4" />
+                    <span className="font-medium">{commentsCount.toLocaleString()}</span>
+                  </div>
+                </div>
               </div>
 
+              {/* Action Buttons - Right Side */}
+              <div className="absolute right-4 bottom-24 flex flex-col items-center gap-4">
+                <div className="flex flex-col items-center">
+                  <button
+                    onClick={onLikeToggle}
+                    disabled={loading}
+                    className="p-3 rounded-full bg-black/40 hover:bg-black/60 transition-all duration-200 backdrop-blur-sm group"
+                    aria-label={localIsLiked ? "Unlike" : "Like"}
+                  >
+                    {localIsLiked ? (
+                      <FaHeart className="w-6 h-6 text-red-500 group-hover:scale-110 transition-transform" />
+                    ) : (
+                      <FaRegHeart className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
+                    )}
+                  </button>
+                  <span className="mt-1 text-xs text-white">{likeCount.toLocaleString()}</span>
+                </div>
 
-            
-            </div>
-            <div className="flex flex-col">
-              <IoBookmarkOutline onClick={()=>handleRollSaving({itemId:roll._id,type:"roll"})} className="text-2xl cursor-pointer dark:text-text-white text-text-charcoal" />
+                <div className="flex flex-col items-center">
+                  <button
+                    onClick={() => setShowComments(true)}
+                    className="p-3 rounded-full bg-black/40 hover:bg-black/60 transition-all duration-200 backdrop-blur-sm group"
+                    aria-label="Comments"
+                  >
+                    <FaRegComment className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
+                  </button>
+                  <span className="mt-1 text-xs text-white">{commentsCount.toLocaleString()}</span>
+                </div>
+
+                <div className="flex flex-col items-center">
+                  <button
+                    onClick={() => setIsSharing(true)}
+                    className="p-3 rounded-full bg-black/40 hover:bg-black/60 transition-all duration-200 backdrop-blur-sm group"
+                    aria-label="Share"
+                  >
+                    <IoIosShareAlt className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
+                  </button>
+                  <span className="mt-1 text-xs text-white">Share</span>
+                </div>
+
+                <div className="flex flex-col items-center">
+                  <button
+                    onClick={() => roll.isSaved ? handleUnsaveRoll(roll.id) : handleRollSaving({ itemId: roll.id, itemType: "REEL" })}
+                    className="p-3 rounded-full bg-black/40 hover:bg-black/60 transition-all duration-200 backdrop-blur-sm group"
+                    aria-label={roll.isSaved ? "Unsave" : "Save"}
+                  >
+                    {roll.isSaved ? (
+                      <IoBookmark className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
+                    ) : (
+                      <IoBookmarkOutline className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
+                    )}
+                  </button>
+                  <span className="mt-1 text-xs text-white">{roll.isSaved ? 'Saved' : 'Save'}</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* text area */}
-          <div className="flex items-center justify-between w-full p-2 space-x-2 border-t border-text-charcoal">
-            <input
-              value={comment}
-              onChange={(e)=> setComment(e.target.value)}
-              onKeyDown={(e)=> e.key === 'Enter' && handleCommentPost()}
-               className="p-2 border outline-none w-96 dark:bg-background-dark dark:border-none bg-background-light text-text-black dark:text-text-white "
-              type="text"
-              placeholder="Add a comment..." />
-            <p  onClick={handleCommentPost} className="text-blue-500 cursor-pointer font-golos">post</p>
+          {/* Double Tap Hint */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 hover:opacity-100 transition-opacity">
+            <div className="text-white/50 text-sm">Double tap to like</div>
           </div>
         </div>
       </div>
-      )}
-</div>
-        </>
-    )
-}
 
-export default RollCard
+      {/* Comments Section */}
+  {showComments && (
+  <CommentsModal
+    isOpen={showComments}
+    onClose={() => setShowComments(false)}
+    entityId={roll.id}
+    entityType="reel"
+    entityOwner={{
+      username: roll.username ??'',
+      profileImage: roll.profileImage
+    }}
+    initialCommentsCount={commentsCount}
+    onCommentAdded={() => {
+      setCommentsCount(prev => prev + 1);
+    }}
+  />
+)}
+
+      {/* Sharing Modal */}
+      {isSharing && (
+        <SharingOption
+          postId={roll.id}
+          postType="REEL"
+          postPreview={{
+            thumbnail: roll.thumbnail,
+            content: roll.content,
+            mediaUrl: roll.mediaUrl
+          }}
+          onClose={() => setIsSharing(false)}
+        />
+      )}
+
+      {/* Roll Menu Modal */}
+      {isRollMenuOpen && (
+        <div 
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/80"
+          onClick={() => setIsRollMenuOpen(false)}
+        >
+          <div 
+            className="w-full max-w-md bg-white dark:bg-gray-900 rounded-t-2xl shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4">
+              <div className="w-12 h-1 mx-auto mb-4 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
+            </div>
+            <div className="p-2 space-y-1">
+              <button className="w-full px-4 py-3 text-left text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                Report
+              </button>
+              <button className="w-full px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                Copy link
+              </button>
+              <button 
+                onClick={() => {
+                  setIsRollMenuOpen(false);
+                  setIsSharing(true);
+                }}
+                className="w-full px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                Share to...
+              </button>
+              <button
+                onClick={() => setIsRollMenuOpen(false)}
+                className="w-full px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors border-t dark:border-gray-700 mt-2 pt-3"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default RollCard;

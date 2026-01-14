@@ -8,9 +8,9 @@ import { IoArrowBackOutline } from "react-icons/io5";
 
 interface props{
   close : (boolean:boolean)=> void
-  userId:string
+  username:string
 }
-const UserDetails:React.FC<props> = ({close,userId})=>{
+const UserDetails:React.FC<props> = ({close,username})=>{
   
  const [user, setUser] = useState<User | null>(null)
   const [followersCount,setFollowersCount] = useState(0)
@@ -20,12 +20,12 @@ const UserDetails:React.FC<props> = ({close,userId})=>{
    useEffect(()=>{
 
     const fetchUser = async()=>{
-        const response = await getUserDetailsApi(userId)
-          setUser(response.data.user)
-          setFollowersCount(response.data.followersCount)
-          setFollowingCount(response.data.followingCount)
-          setPosts(response.data.posts)
-          setPostCount(response.data.posts.length)
+        const response = await getUserDetailsApi(username)
+          setUser(response.data.data.user)
+          setFollowersCount(response.data.data.followersCount)
+          setFollowingCount(response.data.data.followingCount)
+          setPosts(response.data.data.posts)
+          setPostCount(response.data.data.posts.length)
     }
     fetchUser()
    },[])
@@ -46,7 +46,7 @@ const UserDetails:React.FC<props> = ({close,userId})=>{
 <div className="flex flex-col items-center justify-center">
 
           <span className="text-2xl font-semibold cursor-pointer font-zilla text-text-charcoal ">{user?.name ?? 'user'}</span>
-          <span className="text-sm font-semibold cursor-pointer font-zilla text-text-charcoal dark:text-text-Grayish">{user?.user_name ??'username'}</span>
+          <span className="text-sm font-semibold cursor-pointer font-zilla text-text-charcoal dark:text-text-Grayish">{user?.username ??'username'}</span>
         
 </div>
            
@@ -71,7 +71,7 @@ const UserDetails:React.FC<props> = ({close,userId})=>{
           <div className="flex flex-col items-center justify-center dark:text-text-white">
             <span className="cursor-pointer">Bio:</span>
             <span className="w-full cursor-pointer max-w-80">
-           bio
+           {user?.bio?user.bio:"unavailable"}
            </span>
           </div>
           </div>

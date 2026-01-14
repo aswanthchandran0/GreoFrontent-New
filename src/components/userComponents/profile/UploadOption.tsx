@@ -60,8 +60,7 @@ const UploadOption: React.FC<UploadOptionProps>  = ({ userId, onClose,setRefresh
     const formData = new FormData();
     formData.append("files", file);
     formData.append("userId", userId);
-    formData.append("mediaType", mediaType);
-    formData.append("comment", comment);
+    formData.append("content", comment);
     setSelectedFile(null);
     setCroppedImage(null);
     try {

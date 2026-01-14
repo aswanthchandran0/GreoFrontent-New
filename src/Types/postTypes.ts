@@ -8,7 +8,7 @@ export interface IPost {
     commentCount:number
     profileImage: string | undefined;
     name:string
-    user_name: string
+    username: string
     userId:string
     isLiked:boolean
     isSaved:boolean

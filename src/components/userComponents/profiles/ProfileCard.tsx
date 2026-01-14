@@ -32,7 +32,7 @@ const ProfileCard:React.FC<Props> = ({user})=>{
         </div>
         <div className="flex items-center justify-between mt-4">
           <span className="text-sm text-gray-600">{user.followersCount} connections</span>
-          <button onClick={()=>navigate(`/profile/${user.user_name}`)} className="text-sm font-semibold text-purple-600 hover:text-purple-700">
+          <button onClick={()=>navigate(`/profile/${user.username}`)} className="text-sm font-semibold text-purple-600 hover:text-purple-700">
             view
           </button>
         </div>

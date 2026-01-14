@@ -8,7 +8,7 @@ import { IoBookmarkOutline } from "react-icons/io5";
 import Comment from "./Comment";
 import { useEffect, useState } from "react";
 import {
-  commentSentAPi,
+  postCommentApi,
   getCommentsApi,
   saveNotification,
 } from "../../../services/user/api";
@@ -20,7 +20,7 @@ import { BsThreeDots } from "react-icons/bs";
 import PostMenu from "./PostMenu";
 import { timeformat } from "../../../utils/formating";
 import SharingOption from "./SharingOption";
-import { useSocket } from "../../../context/SocketContext";
+// import { useSocket } from "../../../context/SocketContext";
 import { ExploreI } from "../../../Types/exploreTypes";
 import { DEFAULT_PROFILE_IMAGE } from "../../../assets/images";
 
@@ -34,6 +34,7 @@ interface CommetsProps {
   clearDeletePostCatch?: (postId: string) => void;
   handleUpdatePostCatch?: (postId: string, content: string) => void;
   onCommentCountChange?: (count: number) => void;
+  likeCount?:number
 }
 const Comments: React.FC<CommetsProps> = ({
   post,
@@ -43,58 +44,59 @@ const Comments: React.FC<CommetsProps> = ({
   clearDeletePostCatch = () => {},
   handleUpdatePostCatch = () => {},
   onCommentCountChange = () => {},
+  likeCount
 }) => {
   const [comment, setComment] = useState<string>("");
-  const [comments, setComments] = useState<CommentsDto | null>(null);
+  const [comments, setComments] = useState<IComment[]>([]);
   const [isPostMenu, setIsPostMenu] = useState<boolean>(false);
   const loggedUser = useSelector((state: RootState) => state.UserReducer.user);
   const { username } = useParams();
   const [isSharing, setIsSharing] = useState<boolean>(false);
-  const { socket } = useSocket();
+   const [commentsCount,setCommentsCount] = useState(post?.commentCount || 0)
+  // const { socket } = useSocket();
+  
+  
 
-  useEffect(() => {
-    return () => console.log("Comments component unmounted");
-  }, []);
-
-  useEffect(() => {
+  
+useEffect(() => {
+  const fetchComments = async () => {
     try {
-      const fetchComments = async () => {
-        const response = await getCommentsApi(post?._id != null ? post._id : post?.id ?? '');
-        setComments(response.data[0]);
-      };
-      fetchComments();
-    } catch (err) {
-      console.log("err", err);
-    }
-  }, []);
+      const response = await getCommentsApi(post?.id ?? '');
 
-  const handleAddComment = (newComment:IComment) => {
-    console.log('NEW COMMENT -----',newComment)
-    if (comments) {
-      const updatedComments = { ...comments };
-      updatedComments.comments.unshift(newComment);
-      setComments(updatedComments);
-    } else {
-      setComments({
-        postId: newComment.postId,
-        comments: [newComment], // Initialize comments array
-      });
+      // backend might return a single object or array, normalize it
+      const commentsArray: IComment[] = Array.isArray(response.data)
+        ? response.data
+        : [response.data];
+
+      setComments(commentsArray);
+    } catch (err) {
+      console.log('Error fetching comments:', err);
     }
   };
+
+  fetchComments();
+}, [post?.id]);
+
+  const handleAddComment = (newComment: IComment) => {
+  setComments(prevComments => [newComment, ...prevComments]);
+};
 
   // comment sent
   const handleCommentPost = async () => {
     try {
       if (comment.trim()) {
-        const response = await commentSentAPi(post?._id ?? post?.id ?? '', comment);
+        const response = await postCommentApi(post?.id?? "",'post', comment);
+        response.data.profileImage = loggedUser?.profileImage
+        response.data.username = loggedUser?.username
+
         handleAddComment(response.data);
         setComment("");
-
+         setCommentsCount((prev) => prev +1)
         // comment notifying
         const NotifcationMessage = "commented on your post";
         const notificationResponse = await saveNotification(
           post?.userId ?? "",
-          post?._id ?? "",
+          post?.id ?? "",
           post && "mediaUrls" in post && post.mediaUrls?.[0] ? post.mediaUrls[0] : "",
           NotifcationMessage,
           "comment"
@@ -104,7 +106,7 @@ const Comments: React.FC<CommetsProps> = ({
           notificationResponse.data
         );
         if (notificationResponse.data) {
-          socket?.emit("sendNotification", notificationResponse.data);
+          // socket?.emit("sendNotification", notificationResponse.data);
         }
       }
     } catch (err) {
@@ -114,13 +116,13 @@ const Comments: React.FC<CommetsProps> = ({
 
   const navigate = useNavigate();
   const loggedUserName = useSelector(
-    (state: RootState) => state.UserReducer.user?.user_name
+    (state: RootState) => state.UserReducer.user?.username
   );
 
   // profile navigation
   const handleProfileNavigation = () => {
-    if (post && 'user_name' in post && post.user_name !== loggedUserName) {
-      navigate(`/profile/${post.user_name}`);
+    if (post && 'username' in post && post.username !== loggedUserName) {
+      navigate(`/profile/${post.username}`);
     }
   };
 
@@ -132,7 +134,7 @@ const Comments: React.FC<CommetsProps> = ({
   // comment count change
   useEffect(() => {
     if (comments) {
-      onCommentCountChange(comments.comments.length);
+      onCommentCountChange(comments.length);
     }
   }, [comments, onCommentCountChange]);
 
@@ -170,11 +172,11 @@ const Comments: React.FC<CommetsProps> = ({
               onClick={handleProfileNavigation}
               className="font-semibold cursor-pointer text-text-black dark:text-text-white"
             >
-             { post && 'user_name' in post && post.user_name ? post.user_name : 'Unknown User' }
+             { post && 'username' in post && post.username ? post.username : 'Unknown User' }
             </span>
 
             <div className="flex flex-row ml-auto space-x-3 text-xl font-semibold cursor-pointer text-text-black dark:text-text-white">
-              {loggedUser?.user_name === username && (
+              {loggedUser?.username === username && (
                 <BsThreeDots onClick={() => setIsPostMenu(true)} />
               )}
               <IoClose onClick={onClose} />
@@ -200,7 +202,7 @@ const Comments: React.FC<CommetsProps> = ({
                 </div>
                 <div className="flex flex-col mb-auto">
                   <p className="text-text-black dark:text-text-white font-golos">
-                  {post && "user_name" in post ? post.user_name : "user name"}
+                  {post && "username" in post ? post.username : "user name"}
                   </p>
                   <p className="text-sm text-text-darkGray font-outfit">
                     {timeformat(post.createdAt?.toString() || "")}
@@ -215,7 +217,7 @@ const Comments: React.FC<CommetsProps> = ({
             )}
             {/* post description end */}
 
-            {comments?.comments.map((comment, index) => {
+            {comments.map((comment, index) => {
               return <Comment key={index} comment={comment} />;
             })}
           </div>
@@ -238,13 +240,18 @@ const Comments: React.FC<CommetsProps> = ({
                       onClick={onLikeToggle}
                     />
                   )}
-                  {/* <span className="font-golos dark:text-text-white text-text-charcoal">
-          {post.likeCount}
-        </span> */}
+                  {<span className="font-golos dark:text-text-white text-text-charcoal">
+          {likeCount}
+        </span> }
+        
                 </div>
 
                 <div className="flex flex-col items-center justify-center">
                   <FaRegComment className="text-2xl cursor-pointer dark:text-text-white text-text-charcoal" />
+
+                    {<span className="font-golos dark:text-text-white text-text-charcoal">
+          {commentsCount}
+        </span> }
                 </div>
 
                 <div className="flex flex-col items-center justify-center">
@@ -282,7 +289,7 @@ const Comments: React.FC<CommetsProps> = ({
       </div>
       {isPostMenu && (
         <PostMenu
-          postId={post?._id ?? ''}
+          postId={post?.id ?? ''}
           clearDeletePostCatch={clearDeletePostCatch}
           postContent={post?.content ?? ''}
           handleUpdatePostCatch={handleUpdateContent}
@@ -291,7 +298,7 @@ const Comments: React.FC<CommetsProps> = ({
 
       {isSharing && (
         <SharingOption
-          postId={post?._id ?? ''}
+          postId={post?.id ?? ''}
           onClose={() => setIsSharing(!isSharing)}
         />
       )}

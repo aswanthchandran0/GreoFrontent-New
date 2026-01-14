@@ -9,9 +9,9 @@ interface User {
   no: number;
   profileImage: string;
   name: string;
-  user_name:string
+  username:string
   email: string;
-  is_suspended: boolean;
+  isSuspended: boolean;
 }
 
 
@@ -30,15 +30,15 @@ const Users:React.FC = ()=>{
     const [username,setUserName] = useState<string|null>(null)
     const [UserDetailsComponent,setUserDetailsComponent] = useState(false)
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedUser, setSelectedUser] = useState<{ id: string; username: string, is_suspended:boolean }>({ id: '', username: '', is_suspended:false });
+    const [selectedUser, setSelectedUser] = useState<{ id: string; username: string, isSuspended:boolean }>({ id: '', username: '', isSuspended:false });
   
     console.log('users',users,username)
     const [userId,setUserId] = useState('')
   useEffect(()=>{
     const fetchUsers = async ()=>{
       const response =   await getAllUser()
-      console.log('response data',response.data)
-      setUsers(response.data)
+      console.log('response data',response.data.data)
+      setUsers(response.data.data.users)
     }
      fetchUsers()
   },[])
@@ -49,15 +49,15 @@ const handleUserDetailsComponent = (username:string,userId:string)=>{
   setUserDetailsComponent(true)
 }
 
-const openSuspendModal = (id: string, username: string,is_suspended:boolean) => {
-  setSelectedUser({ id, username,is_suspended });
+const openSuspendModal = (id: string, username: string,isSuspended:boolean) => {
+  setSelectedUser({ id, username,isSuspended });
   setIsModalOpen(true);
 };
 
 const updateUserSuspendedStatus = (id: string) => {
   setUsers((prevUsers) =>
     prevUsers.map((user) =>
-      user.id === id ? { ...user, is_suspended: true } : user
+      user.id === id ? { ...user, isSuspended: true } : user
     )
   );
 };
@@ -65,7 +65,7 @@ const updateUserSuspendedStatus = (id: string) => {
 const UpdateUserUnSuspendedStatus = (id: string) => {
   setUsers((prevUsers) =>
     prevUsers.map((user) =>
-      user.id === id ? { ...user, is_suspended: false } : user
+      user.id === id ? { ...user, isSuspended: false } : user
     )
   );
 };
@@ -76,7 +76,7 @@ const UpdateUserUnSuspendedStatus = (id: string) => {
   {
       UserDetailsComponent ?
 
-        <UserDetails close={setUserDetailsComponent} userId={userId}/>
+        <UserDetails close={setUserDetailsComponent} username={username ??''}/>
       :
   <div className="flex flex-col space-y-4 ">
   <div className="flex items-center w-full h-16 p-3 rounded-lg shadow-sm bg-background">
@@ -105,19 +105,19 @@ const UpdateUserUnSuspendedStatus = (id: string) => {
               <img className="object-cover w-full h-full" src={user.profileImage?user.profileImage:DEFAULT_PROFILE_IMAGE} alt="" />
               </div>
             </td>
-            <td className="px-4 py-2 text-sm md:text-lg">{user.user_name}</td>
+            <td className="px-4 py-2 text-sm md:text-lg">{user.username}</td>
             <td className="px-4 py-2 text-sm md:text-lg">{user.email}</td>
 
             <td className={`py-2 text-sm md:text-lg px-4`}>
               
-              <span className={` font-lato ${user.is_suspended? 'text-red-500'  : 'text-green-500' }`}>{user.is_suspended?'Suspended':'active'}</span>
+              <span className={` font-lato ${user.isSuspended? 'text-red-500'  : 'text-green-500' }`}>{user.isSuspended?'Suspended':'active'}</span>
               </td>
        
-            <td onClick={()=>openSuspendModal(user.id, user.user_name,user.is_suspended)} className="px-4 py-2 text-sm md:text-md">
+            <td onClick={()=>openSuspendModal(user.id, user.username,user.isSuspended)} className="px-4 py-2 text-sm md:text-md">
 
-             <span className={`${user.is_suspended?  'bg-green-500 ':'bg-red-500'}  cursor-pointer  text-text_white font-bold rounded font-lato p-2`}>{user.is_suspended?'unSuspend':'Suspend'}</span>
+             <span className={`${user.isSuspended?  'bg-green-500 ':'bg-red-500'}  cursor-pointer  text-text_white font-bold rounded font-lato p-2`}>{user.isSuspended?'unSuspend':'Suspend'}</span>
             </td>
-          <td onClick={()=>handleUserDetailsComponent(user.user_name,user.id)} className="px-4 px-6 py-2 text-sm text-blue-600 cursor-pointer md:text-lg">view</td>
+          <td onClick={()=>handleUserDetailsComponent(user.username,user.id)} className="px-4 px-6 py-2 text-sm text-blue-600 cursor-pointer md:text-lg">view</td>
           </tr>
         ))}
       </tbody>
@@ -132,7 +132,7 @@ const UpdateUserUnSuspendedStatus = (id: string) => {
         onClose={() => setIsModalOpen(false)}
         id={selectedUser.id}
         username={selectedUser.username}
-        is_suspended={selectedUser.is_suspended}
+        isSuspended={selectedUser.isSuspended}
         onSuspend={updateUserSuspendedStatus}
         onUnSuspend={UpdateUserUnSuspendedStatus}
       />

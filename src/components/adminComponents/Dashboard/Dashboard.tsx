@@ -4,7 +4,7 @@ import TopUsers from "./TopUsers";
 import UserAnalytics from "./UserAnalytics";
 import { getAllUser, getTop10Users } from "../../../services/admin/adminApi";
 import { User } from "../../../redux/slices/userSlice";
-import { useSocket } from "../../../context/SocketContext";
+// import { useSocket } from "../../../context/SocketContext";
 import PostGrowthGraph from "./PostGrowthGraph";
 
 const Dashboard = () => {
@@ -13,20 +13,21 @@ const Dashboard = () => {
   const [totalUsers, setTotalUsers] = useState<number>(0);
   const [users, setUsers] = useState<User[]>([]);
   const [top10Users,setTop10users] = useState<User[]>([])
-  const { socket } = useSocket();
+  // const { socket } = useSocket();
 
   console.log('top10Users in Dashboard',top10Users)
   // Fetch all users
   useEffect(() => {
     const fetchUsers = async () => {
       const response = await getAllUser();
-      console.log("response data in fetch users", response.data);
-      const suspended = response.data.filter(
-        (user: User) => user.is_suspended === true
+  
+      console.log("response data in fetch users", response.data.data.users);
+      const suspended = response.data.data.users.filter(
+        (user: User) => user.isSuspended === true
       );
-      setUsers(response.data);
-      setTotalUsers(response.data.length);
-      setSuspendedUsers(suspended.length);
+      setUsers(response.data.data.users);
+      setTotalUsers(response.data.data.users.length);
+      setSuspendedUsers(suspended.users.length);
     };
     fetchUsers();
   }, []);
@@ -35,26 +36,15 @@ const Dashboard = () => {
   useEffect(()=>{
    const fetchTop10Users = async ()=>{
     const response = await getTop10Users()
-    console.log('respone data from top',response.data)
-     setTop10users(response.data)
+  
+    
+     setTop10users(response.data.data.topUsers)
    }
    fetchTop10Users()
   },[])
 
   // Get active users from socket
-  useEffect(() => {
-    if (!socket) return;
-
-    socket.emit("get-active-users");
-    socket.on("active-users-count", (count: number) => {
-      console.log("Active users count:", count);
-      setActiveUsers(count);
-    });
-
-    return () => {
-      socket.off("active-users-count");
-    };
-  }, [socket]);
+ 
 
   return (
     <div className="flex flex-col w-full h-full space-y-3">

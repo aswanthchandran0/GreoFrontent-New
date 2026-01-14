@@ -26,14 +26,19 @@ import Auth from "./components/adminComponents/auth/Auth";
 import AdminSignOutAuth from "./components/userComponents/RouteProtect/admin/adminSignOutAuthProtector";
 import Users from "./components/adminComponents/userManagement/Users";
 import Chat from "./components/userComponents/Chat/Chat";
-import VideoCall from "./components/userComponents/VideoCall/VideoCall";
+// import {VideoCall} from "./components/userComponents/VideoCall/VideoCall"; // 🔥 REMOVE OLD IMPORT
 import Posts from "./components/adminComponents/postManagement/Posts";
 import ExploreScreen from "./pages/ExploreScreen";
 import ShareScreen from "./pages/ShareScreen";
 import Dashboard from "./components/adminComponents/Dashboard/Dashboard";
 import ProfilesScreen from "./pages/ProfilesScreen";
 import LandingPage from "./pages/LandingPage";
-
+import { useSelector } from "react-redux";
+import { RootState } from "./redux/store";
+import { tokenService } from "./services/user/tokenService";
+import { SocketProvider } from "./context/SocketContext";
+import { CallProvider } from "./context/CallContext";
+import CallManager from "./components/userComponents/call/CallManager";
 
 const router = createBrowserRouter([
   {
@@ -78,10 +83,6 @@ const router = createBrowserRouter([
             ],
           },
           {
-            path: "roll",
-            element: <RollScreen />,
-          },
-          {
             path: "explore",
             element:<ExploreScreen/>
           },
@@ -95,12 +96,26 @@ const router = createBrowserRouter([
           }
         ],
       },
+      // Roll route should be outside MainLayout but still inside ProtectedRoute
+      {
+        path: "roll",
+        element: (
+          <div className="fixed inset-0 bg-black">
+            <RollScreen />
+          </div>
+        ),
+      },
     ],
   },
-  {
-    path:"/call/:userId",
-    element:<VideoCall/>
-  },
+  // 🔥 REMOVE THE /call/:userId ROUTE - Calls are now handled via modals
+  // {
+  //   path:"/call/:userId",
+  //   element:(
+  //     <ProtectedRoute>
+  //       <VideoCall/>
+  //     </ProtectedRoute>
+  //   )
+  // },
   {
     path: "/auth",
     element: <AuthRoute />,
@@ -144,16 +159,16 @@ const router = createBrowserRouter([
     path:'/admin/auth',
     element:<AdminSignOutAuth/>,
     children:[
-    {
-      element:<AdminAuth/>,
-      children: [
-        {
-          index:true,
-          element: <Auth/> }
-      ]
-    }
+      {
+        element:<AdminAuth/>,
+        children: [
+          {
+            index:true,
+            element: <Auth/> 
+          }
+        ]
+      }
     ]
-     
   },
   {
     path:'/admin',
@@ -161,29 +176,47 @@ const router = createBrowserRouter([
     children:[
       {
         path: '', // Default route for /admin
-        element: <Dashboard />, // Dashboard component
+        element: <Dashboard />,
       },
       {
-         path:"users",
+        path:"users",
         element:<Users/>,
       },
       {
         path:"posts",
         element:<Posts/>
       },
-
     ]
-
+  },
+  {
+    path:"demo",
+    // element:<VideoCall/> // 🔥 Remove or keep for demo
+    element: <Navigate to="/" /> // Redirect since calls are modal-based
   }
 ]);
 
 const App = () => { 
+  const user = useSelector((state: RootState) => state.UserReducer.user);
+  const token = tokenService.getAccessToken();
+ 
+  if (user && token) {
+    return (
+      <SocketProvider userId={user.id} token={token}>
+        <CallProvider>
+          <Toaster position="top-right" />
+          <RouterProvider router={router} />
+          <CallManager /> {/* This renders all call modals/screens */}
+        </CallProvider>
+      </SocketProvider>
+    );
+  }
+
   return (
-  <>
-    <Toaster position="top-right" />
-    <RouterProvider router={router} />
-  </>
-)
+    <>
+      <Toaster position="top-right" />
+      <RouterProvider router={router} />
+    </>
+  );
 };
 
 export default App;

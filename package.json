@@ -22,6 +22,7 @@
     "apexcharts": "^4.3.0",
     "axios": "^1.7.7",
     "buffer": "^6.0.3",
+    "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
     "emoji-picker-react": "^4.12.0",
     "formik": "^2.4.6",

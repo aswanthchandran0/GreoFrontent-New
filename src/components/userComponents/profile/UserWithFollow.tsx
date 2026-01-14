@@ -10,7 +10,7 @@ const UserWithFollow:React.FC<Props>  = ({user,onClose})=>{
    const navigate = useNavigate()
 
    const handleProfileView = ()=>{
-     navigate(`/profile/${user.user_name}`)
+     navigate(`/profile/${user.username}`)
     onClose()
    }
     return(
@@ -21,7 +21,7 @@ const UserWithFollow:React.FC<Props>  = ({user,onClose})=>{
 
           <div className="flex flex-col justify-center">
             <p className=" text-text-black dark:text-text-white font-golos">{user.name || 'name'} </p>
-            <p className="text-sm text-text-black dark:text-text-white font-golos">{user.user_name || 'username'}</p>
+            <p className="text-sm text-text-black dark:text-text-white font-golos">{user.username || 'username'}</p>
           </div>
           
           <div onClick={handleProfileView } className="px-2 ml-auto bg-blue-500 rounded-md cursor-pointer text-text-white">

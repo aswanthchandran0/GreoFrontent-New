@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { IPost } from "../Types/postTypes";
-import { getSingePostApi, likePostApi } from "../services/user/api";
+import { getSingePostApi,  } from "../services/user/api";
 import Comments from "../components/userComponents/post/Comments";
 import { AiOutlineHome } from "react-icons/ai";
 import toast from "react-hot-toast";
@@ -28,34 +28,35 @@ const ShareScreen = () => {
    }
 
 // handling like 
-  const handleLike = async ()=>{
-    try{
-      if(!isLiked){
-        console.log('request was reaching inside isliked')
-        await likePostApi([post?._id ??''],[])
-        setIsLiked(!isLiked)
-      }else{
-        await likePostApi([],[post?._id??''])
-        setIsLiked(!isLiked)
-      }
-    }catch(err){
-      console.log(err)
-      toast.error("something went wrong in liking")
-    }
+  // const handleLike = async ()=>{
+  //   try{
+  //     if(!isLiked){
+  //       console.log('request was reaching inside isliked')
+  //       await likePostApi([post?._id ??''],[])
+  //       setIsLiked(!isLiked)
+  //     }else{
+  //       await likePostApi([],[post?._id??''])
+  //       setIsLiked(!isLiked)
+  //     }
+  //   }catch(err){
+  //     console.log(err)
+  //     toast.error("something went wrong in liking")
+  //   }
   
-  }
+  // }
 
   console.log('post',post)
   return (
     <div className="flex h-full dark:bg-background-dark bg-background-light md:max-h-[90vh] max-h-[83vh] lg:px-16 justify-center scroll-smooth">
     {isPostOpen ? (
       post ? (
-        <Comments
-          post={post}
-          isLiked={isLiked}
-          onLikeToggle={handleLike}
-          onClose={handlePostOpen}
-        />
+        <></>
+        // <Comments
+        //   post={post}
+        //   isLiked={isLiked}
+        //   onLikeToggle={handleLike}
+        //   onClose={handlePostOpen}
+        // />
       ) : (
         <p>Loading...</p> // Optional loading indicator
       )

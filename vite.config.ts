@@ -5,11 +5,21 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      buffer: "buffer", // Alias for Buffer
-      process: "process/browser", // Alias for process
+      buffer: "buffer",
+      process: "process/browser",
     },
   },
   define: {
-    global: "globalThis", // Define global for browser
+    global: "globalThis",
+  },
+  server: {
+    host: true, // 👈 REQUIRED for mobile access
+    port: 5173,
+    proxy: {
+      "/api": {
+        target: "http://localhost:5000",
+        changeOrigin: true,
+      },
+    },
   },
 });

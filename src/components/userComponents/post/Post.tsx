@@ -14,7 +14,6 @@ interface OutletContext {
 const Post = () => {
   const [posts, setPosts] = useState<IPost[]>([]);
   const { newPosts } = useOutletContext<OutletContext>();
-  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const skipRef = useRef(0);
   const [limit] = useState(10);
@@ -39,13 +38,7 @@ const Post = () => {
         return [...prevPosts, ...uniquePosts];
       });
 
-     // Merge new liked posts with existing liked posts
-    setLikedPosts((prevLikedPosts) => {
-      const newLikedSet = new Set<string>(
-        fetchedPosts.filter((p: IPost) => p.isLiked).map((p: IPost) => p._id)
-      );
-      return new Set([...prevLikedPosts, ...newLikedSet]);
-    });
+
 
       if (fetchedPosts.length < limit) {
         setHasMorePosts(false);
@@ -129,9 +122,9 @@ const Post = () => {
       {posts.length > 0 ? (
     posts.map((p, index) => (
       <PostCard
-        key={p._id || `${p._id}-${index}`}
+        key={p.id || `${p.id}-${index}`}
         post={p}
-        isLiked={likedPosts.has(p._id)}
+        isLiked={p.isLiked}
         id={index === posts.length - 1 ? "last-post" : undefined}
         setPosts={setPosts}
       />

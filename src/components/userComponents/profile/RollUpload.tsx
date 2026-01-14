@@ -101,7 +101,7 @@ const RollUpload:React.FC<Props> = ({base64Video,onClose, handleReelUploadFinish
            <div className='w-10 h-10 overflow-hidden rounded-full'>
             <img className="object-cover w-full h-full" src={user?.profileImage || DEFAULT_PROFILE_IMAGE } alt="profile image" />
            </div>
-    <p className="font-semibold text-text-black dark:text-text-white font-golos">{user?.user_name}</p>
+    <p className="font-semibold text-text-black dark:text-text-white font-golos">{user?.username}</p>
            </div>
 
             <textarea value={description} onChange={handleDiscriptionChange} 

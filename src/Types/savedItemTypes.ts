@@ -3,7 +3,7 @@ import { IPost } from "./postTypes";
 
 export interface SavedItemArrayElement {
   itemId:string;
-  type: 'post' | 'roll';  
+  itemType: 'POST' | 'REEL';  
   collectionName?: string;
 }  
   
@@ -13,7 +13,7 @@ export interface SavedItem {
   type: "post" | "roll";
   userId: string;  // ID of the user who saved the post
   items: {
-    type: "post" | "roll";
+    itemType: "POST" | "REEL";
     postData?: IPost; // Assuming `IPost` is the type for posts
     rollData?: IRoll; // Assuming `IRoll` is the type for rolls
   }[]; // Corrected to an array

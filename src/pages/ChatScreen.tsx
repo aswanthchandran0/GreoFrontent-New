@@ -1,132 +1,74 @@
-import { IoChatbubblesOutline } from "react-icons/io5"
-import ChatList from "../components/userComponents/Chat/ChatList"
-import { Outlet,  useParams } from "react-router-dom"
-import { useSelector } from "react-redux"
-import { RootState } from "../redux/store"
-import { useEffect, useState } from "react"
-import { User } from "../redux/slices/userSlice"
-import { IChat } from "../Types/userChats/chatType"
-import { createChatApi, getChatsApi, getUserByIdApi } from "../services/user/api"
-import { useSocket } from "../context/SocketContext"
-import { IMessage } from "../interface/messageInterface"
+// src/pages/ChatScreen.tsx
+import { IoChatbubblesOutline } from "react-icons/io5";
+import ChatList from "../components/userComponents/Chat/ChatList";
+import { useParams } from "react-router-dom";
+import Chat from "../components/userComponents/Chat/Chat";
 
-const ChatScreen = () =>{
+const ChatScreen = () => {
   const { userId } = useParams();
-  const { onlineUsers, sendMessage, receiveMessage } = useSocket(); // Access socket instance and online users from context
-  const localUser = useSelector((state: RootState) => state.UserReducer.user);
 
-  // State variables...
-  const [opponentUser, setOpponentUser] = useState<User | null>(null);
-  const [chats, setChats] = useState<IChat[]>([]);
-  const [currentChat, setCurrentChat] = useState<IChat | null>(null);
-  const [selectedUserData, setSelectedUserData] = useState<User | null>(null);
-  const [latestSendedMessage,setLatestSendedMessage] = useState<IMessage | null>(null)
-  
-  // Fetch opponent user data
-  useEffect(() => {
-    if (userId) {
-      const fetchOpponentUser = async () => {
-        const response = await getUserByIdApi(userId || "");
-        setOpponentUser(response.data);
-      };
+  return (
+    <div className="flex h-screen w-full bg-gray-50 dark:bg-gray-900 overflow-hidden">
+      {/* Chat List Sidebar */}
+      <div 
+        className={`${
+          userId 
+            ? 'hidden lg:flex lg:w-96 xl:w-1/4' 
+            : 'flex w-full lg:w-96 xl:w-1/4'
+        } flex-col h-full border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 transition-all duration-300`}
+      >
+        <ChatList />
+      </div>
 
-      fetchOpponentUser();
-    } else {
-      console.log("userId is undefined");
-    }
-  }, [userId]);
+      {/* Chat Area or Welcome Screen */}
+      <div 
+        className={`${
+          userId 
+            ? 'flex w-full' 
+            : 'hidden lg:flex lg:w-3/4 xl:w-full'
+        } flex-col h-full overflow-hidden`}
+      >
+        {userId ? (
+          <div className="flex-1 overflow-hidden">
+            <Chat />
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+            <div className="mb-8">
+              <div className="relative mb-6">
+                <div className="w-32 h-32 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 flex items-center justify-center">
+                  <IoChatbubblesOutline className="w-20 h-20 text-purple-500 dark:text-purple-400" />
+                </div>
+                <div className="absolute -inset-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-full blur-xl"></div>
+              </div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
+                Welcome to Chat
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 text-lg max-w-md mx-auto">
+                Select a conversation from the sidebar or start a new chat
+              </p>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-4 mt-8">
+              <div className="p-6 rounded-2xl bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-900 border border-purple-100 dark:border-purple-900/30">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Start Chatting</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Send messages, photos, videos, and documents
+                </p>
+              </div>
+              
+              <div className="p-6 rounded-2xl bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-gray-800 dark:to-gray-900 border border-blue-100 dark:border-blue-900/30">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Share Moments</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Share posts and reels with your friends
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
-  // Fetch chats data
-  useEffect(() => {
-    const fetchChats = async () => {
-      const { data } = await getChatsApi(localUser?.id || "");
-      setChats(data);
-    };
-
-    fetchChats();
-  }, [localUser?.id, userId]);
-
-  // Handle conversation click
-  const handleConversationClick = async (chat: IChat) => {
-    console.log("handle conversation clicking")
-    setCurrentChat(chat);
-    const userId = chat.members.find((id) => id !== localUser?.id);
-    if (userId) {
-      const { data } = await getUserByIdApi(userId);
-      setSelectedUserData(data);
-      setOpponentUser(data);
-    }
-    // navigate(`/chat/${chat.id}`);
-  };
-  // Check if user is online
-  const isUserOnline = (userId: string) => {
-    return onlineUsers.some((user) => user.userId === userId);
-  };
-
-  // Check if chat exists, create one if not
-  const checkAndCreateChat = async () => {
-    if (!currentChat && userId) {
-      try {
-        const response = await createChatApi({
-          senderId: localUser?.id ?? '',
-          receiverId: userId,
-        });
-        setChats((prevChats) => [...prevChats, response.data]);
-        setCurrentChat(response.data);
-      } catch (error) {
-        console.error("Error creating chat:", error);
-      }
-    }
-  };
-
-  useEffect(() => {
-    checkAndCreateChat();
-  }, [userId]);
-
-
-  const onNewMessage = (data:IMessage) => {
-    setLatestSendedMessage(data)
-  };
-  
-
-
-
-    return(
-       <div className="flex justify-center h-full dark:bg-background-dark bg-background-light dark:text-text-white md:max-h-[90vh] max-h-[83vh] lg:px-16   p-2">
-     
-     <div  className={`${userId?'lg:flex hidden':'flex'} flex-col w-full max-w-[397.20px] h-full  border border-text-charcoal `}>
-         <ChatList data={chats} currentUserId={localUser?.id || null}  onConversationClick={handleConversationClick} latestSendedMessage={latestSendedMessage}/>
-   </div>
-         <div className={` ${userId?'flex':'lg:flex hidden'} items-center justify-center w-full lg:flex`}>
-       
-      
-       {
-         userId ?
-<Outlet context={{
-   opponentUser,
-   chat:currentChat,
-   localUserId:localUser?.id || '',
-   userData:selectedUserData,
-   setSendMessage:sendMessage,
-   receiveMessage,
-   isOnline: isUserOnline(opponentUser?.id || ""),
-   onNewMessage
- }}/>
-:
-         
-         <div className="flex flex-col items-center justify-center ">
-    
-         <IoChatbubblesOutline className="w-20 h-20 text-primary" />
-         <span className="text-3xl font-bold text-primary font-lato">Greo</span>
-         <span className="font-bold text-primary font-lato text-md">Send and receive messages</span>
-         
-         </div>
-         
-       }
-      
-         </div>
-       </div>
-    )
- }
-
- export default ChatScreen
+export default ChatScreen;

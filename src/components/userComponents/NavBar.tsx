@@ -30,7 +30,7 @@ import UploadOption from "./profile/UploadOption";
 import { IPost } from "../../Types/postTypes";
 import Notification from "./notification/Notification";
 import { INotification } from "../../Types/notifications/notificationTypes";
-import { useSocket } from "../../context/SocketContext";
+// import { useSocket } from "../../context/SocketContext";
 
 interface Props {
   onNewPost: (post: IPost) => void;
@@ -45,11 +45,11 @@ const NavBar: React.FC<Props> = ({ onNewPost }) => {
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [isUploadOptionComponent, setIsUploadOptionComponent] =
     useState<boolean>(false);
-  const { socket } = useSocket();
+  // const { socket } = useSocket();
 
   // fetch the local user
   const username = useSelector(
-    (state: RootState) => state.UserReducer.user?.user_name
+    (state: RootState) => state.UserReducer.user?.username
   );
 
   // for searching 
@@ -88,6 +88,7 @@ const NavBar: React.FC<Props> = ({ onNewPost }) => {
     setIsLoading(true)
     try{
       const response = await getUserNotificationApi();
+      console.log("user notification getting in navbar...............................",response.data)
       setNotifications(response.data);
     }catch(err){
       console.log("error in fetch notification",err)
@@ -106,45 +107,46 @@ setUnreadCount(unReadedNotifications.length)
 
 // socket notifcation listning
 useEffect(()=>{
- socket?.on("receiveNotification",(newNotifications:INotification) =>{
-  console.log('notification recevied',newNotifications)
-  console.log('notification',notifications)
-  setNotifications((prev)=>{
-    // const isDuplicate = prev.some((notification)=>
-    // notification.entityId == newNotifications.entityId &&
-    // notification.initiatorId == newNotifications.initiatorId &&
-    // notification.type == newNotifications.type 
-    // )
-    // if(isDuplicate){
-    //   console.log('duplicate was occured')
-    //   return prev
-    // }
-    return [newNotifications,...prev]
-  })
+//  socket?.on("receiveNotification",(newNotifications:INotification) =>{
+//   console.log('notification recevied',newNotifications)
+//   console.log('notification',notifications)
+//   setNotifications((prev)=>{
+//     // const isDuplicate = prev.some((notification)=>
+//     // notification.entityId == newNotifications.entityId &&
+//     // notification.initiatorId == newNotifications.initiatorId &&
+//     // notification.type == newNotifications.type 
+//     // )
+//     // if(isDuplicate){
+//     //   console.log('duplicate was occured')
+//     //   return prev
+//     // }
+//     return [newNotifications,...prev]
+//   })
   
- })
+//  })
 
  // remove the notificatoin 
-socket?.on("receiveRemoveNotification",(removeNotification:INotification)=>{
-  console.log('recevied remove notification',removeNotification)
-  console.log('current notifcation',notifications)
-  setNotifications((prev) =>
-    prev.filter(
-      (notification) =>
-        !(
-          notification.entityId === removeNotification.entityId &&
-          notification.initiatorId === removeNotification.initiatorId &&
-          notification.type === removeNotification.type
-        )
-    )
-  );
-})
+// socket?.on("receiveRemoveNotification",(removeNotification:INotification)=>{
+//   console.log('recevied remove notification',removeNotification)
+//   console.log('current notifcation',notifications)
+//   setNotifications((prev) =>
+//     prev.filter(
+//       (notification) =>
+//         !(
+//           notification.entityId === removeNotification.entityId &&
+//           notification.initiatorId === removeNotification.initiatorId &&
+//           notification.type === removeNotification.type
+//         )
+//     )
+//   );
+// })
 
  return ()=>{
-  socket?.off("receiveNotification")
-  socket?.off("receiveRemoveNotification")
+  // socket?.off("receiveNotification")
+  // socket?.off("receiveRemoveNotification")
  }
-},[socket])
+// },[socket])
+},[])
 
 
 // set setNotificationReaded
@@ -373,6 +375,7 @@ socket?.on("receiveRemoveNotification",(removeNotification:INotification)=>{
           isLoading={isLoading}
           onClose={() => setIsNotificationOpen(!isNotificationOpen)}
           setNotificationReaded={setNotificationReaded}
+          setNotification={()=>setNotification}
         />
       )}
     </>

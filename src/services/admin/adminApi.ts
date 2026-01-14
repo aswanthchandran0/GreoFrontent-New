@@ -30,7 +30,7 @@ API.interceptors.response.use(
 
 
  export  const adminSigninApi = async (email:string,password:string)=>{
-      return await  API.post('/authenticate',{email,password})
+      return await  API.post('/signin',{email,password})
     }
 
 
@@ -40,7 +40,7 @@ export const getAllUser = async ()=>{
 }
 export const suspendUserApi = async(userId:string|null)=>{
   if(userId !== null){
-    return await API.post('/users/suspend',{userId})
+    return await API.patch(`/users/${userId}/suspend`)
   }else{
    throw new Error('userId not in there')
   }
@@ -49,14 +49,14 @@ export const suspendUserApi = async(userId:string|null)=>{
 
 export const unSuspendUserApi = async (userId:string|null)=>{
   if(userId !== null){
-    return await API.post('/users/unsuspend',{userId})
+    return await API.patch(`/users/${userId}/unsuspend`)
   }else{
    throw new Error('userId not in there')
   }
 }
 
-export const getUserDetailsApi = async (userId:string)=>{
-   return await API.get(`/userDetails/${userId}/`)
+export const getUserDetailsApi = async (username:string)=>{
+   return await API.get(`/users/${username}/`)
 }
 
 export const getReportedPostApi = async ()=>{
@@ -69,14 +69,25 @@ export const getStackOfUsersApi = async (userIds:string[])=>{
 
 
 export const getTop10Users = async ()=>{
-  return await API.get("top10Users")
+  return await API.get("/top10Users")
 }
 
 export const getAllRollsAndPostsApi = async()=>{
-  return await API.get("rollsAndPosts")
+  return await API.get("/rollsAndPosts")
 }
 
 export const blockUserPost = async (postId:string,action:boolean)=>{
 
   return await API.patch("users",{postId,action})
+
+  
 }
+
+export const blockPostApi = async (postId: string, reason?: string) => {
+  return API.post(`/posts/${postId}/block`, { reason });
+};
+
+// Unblock a post  
+export const unblockPostApi = async (postId: string) => {
+  return API.post(`/posts/${postId}/unblock`);
+};

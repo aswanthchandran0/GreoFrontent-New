@@ -1,4 +1,4 @@
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import NavBar from "./NavBar";
 import { setNavigateFunction } from "../../utils/navigate";
 import { useEffect, useState } from "react";
@@ -10,51 +10,49 @@ import { RootState } from "../../redux/store";
 
 const MainLayout = () => {
   const [newPosts, setNewPosts] = useState<IPost | null>(null);
-  const user = useSelector((state:RootState)=>state.UserReducer.user)
-  const navigate = useNavigate(); // This is inside the router context
+  const user = useSelector((state: RootState) => state.UserReducer.user);
+  const navigate = useNavigate();
+  const location = useLocation(); // Get current location
   const isDarkMode = useSelector((state: RootState) => state.preferences.darkMode);
-   const {receivingCall} = useCall()
-   
+  const { receivingCall } = useCall();
+
+  // Check if current route is /roll
+  const isRollPage = location.pathname === "/roll";
+
   useEffect(() => {
-    setNavigateFunction(navigate); // Set the navigate function globally if necessary
+    setNavigateFunction(navigate);
   }, [navigate]);
 
-
-  const handleNewPost = (newPost:IPost) => {
+  const handleNewPost = (newPost: IPost) => {
     const newPostWithUserDetails = {
-      ...newPost,  // Spread the existing newPost data
-      profileImage: user?.profileImage,  // Add the profile image from the user state
-      name:user?.name,
-      isLiked:false,
-      likeCount:0,
-      commentCount:0,
-      user_name: user?.user_name,  // Add the username from the user state
-    } as IPost
+      ...newPost,
+      profileImage: user?.profileImage,
+      name: user?.name,
+      isLiked: false,
+      likeCount: 0,
+      commentCount: 0,
+      user_name: user?.username,
+    } as IPost;
     setNewPosts(newPostWithUserDetails);
   };
 
-
-
-  // dark mode 
+  // dark mode
   useEffect(() => {
-    // Sync the dark mode state with the DOM
     if (isDarkMode) {
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");
     }
-  }, [isDarkMode]); 
-
+  }, [isDarkMode]);
 
   return (
     <>
       <div className="relative w-screen h-screen bg-background-light dark:bg-background-dark">
-
-        {
-          receivingCall && <IncomingCallModal/>
-        //  <IncomingCallModal/>
-        }
-        <NavBar onNewPost={handleNewPost} />
+        {receivingCall && <IncomingCallModal />}
+        
+        {/* Conditionally render NavBar */}
+        {!isRollPage && <NavBar onNewPost={handleNewPost} />}
+        
         <Outlet context={{ newPosts }} />
       </div>
     </>

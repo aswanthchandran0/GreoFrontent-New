@@ -2,7 +2,7 @@ import { IoClose } from "react-icons/io5";
 import { INotification } from "../../../Types/notifications/notificationTypes";
 import NotificationBox from "./NotificationBox";
 import { useEffect } from "react";
-import { NotificationUpdatingApi } from "../../../services/user/api";
+import { getUserNotificationApi} from "../../../services/user/api";
 
 
 interface Props {
@@ -10,18 +10,20 @@ interface Props {
   notifications:INotification[]
   isLoading:boolean
   setNotificationReaded:()=>void
+  setNotification:()=>void
 }
 
-const Notification: React.FC<Props> = ({ onClose,notifications,isLoading,setNotificationReaded }) => {
+const Notification: React.FC<Props> = ({ onClose,notifications,isLoading,setNotificationReaded,setNotification }) => {
  
-
+console.log("notifications",notifications)
  // make the notification isRead = true
  useEffect(()=>{
   const updateNotfication = async()=>{
-    const response = await NotificationUpdatingApi()
+    const response = await getUserNotificationApi()
     console.log("after updating is readed",response)
     if(response.data == true){
-  setNotificationReaded()
+  // setNotificationReaded()
+  setNotification(response.data)
     }
   }
   updateNotfication()

@@ -11,7 +11,7 @@ import UploadOption from "./UploadOption";
 import { getSavedItemApi, getUserRollApi } from "../../../services/user/api";
 import UserRollCard from "./userRollCard";
 import { SavedItem } from "../../../Types/savedItemTypes";
-import SavedItemCard from "./SavedItemCard";
+import SavedItemCard, { BackendSavedItem } from "./SavedItemCard";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/store";
 import { LoaderSpinner } from "../../ui/LoadingSpinner";
@@ -19,7 +19,7 @@ import toast from "react-hot-toast";
 // Define types for props
 interface User {
   id:string
-  user_name: string;
+  username: string;
   profileImage:string
 }
 
@@ -31,16 +31,16 @@ interface UserPostsProps {
 }
 
 export interface IRoll{
-  _id:string,
+  id:string,
   userId:string,
   thumbnail:string,
   mediaUrl: string,
   content?: string,
   createdAt:Date,
   name?: string;
-  userName?:string
+  username?:string
   profileImage?: string; 
-  isLikedByViewingUser?:boolean
+  isLiked:boolean
   likeCount:number
   commentCount?:number
   isSaved:boolean
@@ -52,7 +52,7 @@ const UserPosts: React.FC<UserPostsProps> = ({ user, posts,setRefreshPosts,refre
   const [rolls,setRolls] = useState<IRoll[]>([])
   // const userId = useSelector((state: RootState) => state.UserReducer.user?.id);
   const [userPosts, setUserPosts] = useState<IPost[]>([]);
-  const [savedItems, setSavedItems] = useState<SavedItem[]>([]); 
+  const [savedItems, setSavedItems] = useState<BackendSavedItem[]>([]); 
   const { username } = useParams();
   const [loading,setLoading] = useState<boolean>(false)
   const loggedInuser = useSelector((state:RootState)=>state.UserReducer.user)
@@ -64,7 +64,7 @@ const UserPosts: React.FC<UserPostsProps> = ({ user, posts,setRefreshPosts,refre
       const postDetails = posts.map((post) => ({
         ...post,
         profileImage: user.profileImage,
-        user_name: user.user_name,
+        username: user.username,
       }));
       setUserPosts(postDetails);
     } else {
@@ -111,7 +111,8 @@ useEffect(()=>{
       try {
         setLoading(true)
         const response = await getSavedItemApi(); // Update with your API
-        setSavedItems(response.data);
+        console.log("saved items response",response.data)
+        setSavedItems(response.data.data);
       } catch (error) {
         console.error("Error fetching saved items:", error);
       }finally{
@@ -124,19 +125,19 @@ useEffect(()=>{
 
 
 const clearDeletePostCatch = (postId:string)=>{
-   setUserPosts((posts)=> posts.filter(post => post._id !== postId))
+   setUserPosts((posts)=> posts.filter(post => post.id !== postId))
 }
 
 console.log('posts',posts)
 
 
 const handleUpdatePostCatch = (postId:string,content:string)=>{
-  setUserPosts((posts)=> posts.map((post)=> post._id == postId ?{...post,content:content}:post))
+  setUserPosts((posts)=> posts.map((post)=> post.id == postId ?{...post,content:content}:post))
 }
   return (
     <div className="relative flex flex-col w-full">
       <div className="flex flex-row items-center justify-center space-x-3 md:justify-end ">
-        {username === loggedInuser?.user_name && (
+        {username === loggedInuser?.username && (
           <button    onClick={() => setIsUploadOptionComponent(true)} className="relative flex flex-row items-center justify-center p-1 border rounded-md dark:text-white hover:bg-white hover:text-text-Grayish ">
             <IoMdAdd className="text-md" />
          
@@ -165,7 +166,7 @@ const handleUpdatePostCatch = (postId:string,content:string)=>{
       <div className="grid grid-cols-2 overflow-y-scroll scrollbar-hide">
 
         {selectedOption =='Posts' && userPosts.map((post) => (
-          <UserPostCard key={post._id} post={post}  clearDeletePostCatch={clearDeletePostCatch} handleUpdatePostCatch={handleUpdatePostCatch}/>
+          <UserPostCard key={post.id} post={post}  clearDeletePostCatch={clearDeletePostCatch} handleUpdatePostCatch={handleUpdatePostCatch}/>
         ))}
       </div>
    
@@ -182,18 +183,10 @@ const handleUpdatePostCatch = (postId:string,content:string)=>{
    }
 
 {selectedOption === "Saved" &&
-  savedItems &&  savedItems.map((savedItem) =>
-      savedItem.items.map((item, itemIndex) => (
-        <SavedItemCard
-          key={itemIndex}
-          item={{
-            type: item.type,
-            postData: item.type === "post" ? item.postData : undefined,
-            rollData: item.type === "roll" ? item.rollData : undefined,
-          }}
-        />
+  savedItems &&  savedItems.map((item) => (
+        <SavedItemCard key={item.id} item={item} />
       ))
-    )}
+    }
 
    </div>
 {isUploadOptionComponent && (

@@ -48,7 +48,7 @@ API.interceptors.response.use(
 
 
       try {
-        const response = await API.post("/refresh-token", { refreshToken });
+        const response = await API.post("/auth/refresh", { refreshToken });
         console.log('after refresh token retrive',response.data);
         const { accessToken, refreshToken: newRefreshToken } = response.data;
         tokenService.setToken(accessToken, newRefreshToken);
@@ -69,87 +69,95 @@ export const signUpApi = async (userData: {
   email: string;
   password: string;
 }) => {
-  return await API.post("/user_signup", userData);
+  console.log("request was reaching in this api and its auth si")
+  return await API.post("/auth/sign-up", userData);
 };
 
-export const verifyOtp = async (userId: string, otpCode: string) => {
-  console.log(otpCode);
-  return await API.post("/verify_otp", { userId, otpCode });
+export const verifyOtp = async (userId: string, code: string) => {
+
+  return await API.post("/auth/verify-otp", { userId, code  });
 };
 
 export const SigninApi = async (email: string, password: string) => {
-  return await API.post("/user_signin", { email, password });
+  return await API.post("/auth/sign-in", { email, password });
 };
 
 export const GoogleSignUpApi = async (token: string) => {
-  return await API.post("/signup_with_google", {token,publicKey: "*******",})
+  return await API.post("/auth/sign-up-with-google", {token})
 }
 
 export const GoogleSignInApi = async (token: string) => {
-  return await API.post('/signin_with_google', { token })
+  return await API.post('/auth/sign-in-with-google', { token })
 }
 
 export const forgotPasswordTokenGenerateAPI = async (email: string) => {
-  return await API.post("/generate_forgot_password_token", { email });
+  return await API.post("/auth/generate-forgot-password-token", { email });
 }
 
 export const updatePasswordApi = async (token:string,password:string) => {
-  return await API.patch('/update_password', { token, password })
+  return await API.patch('/auth/update-password', { token, password })
 }
 
 export const resentOtpApi = async (email:string) => {
-return await API.post('/resent_otp', { email })
+return await API.post('/auth/resent-otp', { email })
 }
 
 export const profileDetailsFetchApi = async (username:string) => {
-  return await API.get(`/profile/${username}`)
+  const result =  await API.get(`/profile/${username}`)
+  console.log("profiel result",result)
+  return result
 }
 
 export const updateProfileApi = async (data:FormData)=>{
-  return await API.patch('/update_profile', data)  
+  return await API.patch('/profile/update', data)  
 }
 
 export const checkUsernameApi = async (username:string)=>{
- return await API.get(`/check_username/${username}`)
+ return await API.get(`/profile/check-username/${username}`)
 }
 
 export const followUserApi = async (followerId: string, followeeId: string) => {
-  return await API.post('/follow', { followerId, followeeId })
+  return await API.post('/profile/follow', { followerId, followeeId })
 }
 
 export const unfollowUserApi = async (followerId: string, followeeId: string) => {
-  return await API.post('/unfollow', { followerId, followeeId })
+  return await API.post('/profile/unfollow', { followerId, followeeId })
 }
 
 export const postUploadApi = async (formData: FormData) => {
-  return  await API.post('/post_upload', formData)
+  return  await API.post('/post', formData)
 }
 
 export const getUserFeedApi = async (skip:number,limit:number) => {
-  console.log('skip',skip)
-  return await API.get(`/user_feed/${skip}/${limit}`)
+
+  return await API.get(`/post/user-feed/${skip}/${limit}`)
+}
+
+
+export const toggleLikeApi = async (targetId:string,targetType:string,)=>{
+  console.log("targetid",targetId)
+  return await API.post('/post/like',{targetId,targetType})
 }
 
 
 
-export const likePostApi = async (likeIds: string[], unlikeIds: string[]) => {
-  return await API.post('/like_post', { likeIds, unlikeIds });
-};
 
 
 
-export const getCommentsApi = async (postId: string) => {
-  return await API.get(`/get_comments/${postId}`,)
+
+
+export const getCommentsApi = async (targetId:string,targetType = 'post') => {
+  return await API.get(`/post/comments/${targetId}/${targetType}`,)
+}
+
+export const postCommentApi = async(targetId:string,targetType:string,content:string) =>{
+  return await API.post('/post/post-comment',{targetId,targetType,content})
 }
 
 
-export const commentSentAPi = async (postId: string, content: string) => {
-  console.log('post id and commment', postId, content)
-  return await API.post(`/post_comment`, { postId, content })
-}
 
 export const getUserByIdApi = async (userId: string) => {
-  return await API.get(`/get_user_by_id/${userId}`)
+  return await API.get(`/profile/user-by-id/${userId}`)
 }
 
 export const getChatsApi = async (userId: string) => {
@@ -169,20 +177,25 @@ export const createChatApi = async(data:CreateChatRequest)=>{
 }
 
 export const getFollowersApi = async(username:string)=>{
-  return await API.get(`/followers/${username}`)
+  return await API.get(`/profile/followers/${username}`)
 }
 
 export const getFollowingApi = async(username:string)=>{
-  return await API.get(`/following/${username}`)
+  return await API.get(`/profile/following/${username}`)
 }
 
 export const rollUploadApi  = async(payload:RollUploadPayload)=>{
   console.log('data in roll upload',payload)
-  return await API.post('/roll',payload)
+  return await API.post('/reel',payload)
 }
 
+export const getUserPostApi = async(userId:string)=>{
+  return await API.get(`/post/${userId}`)
+}
+
+
 export const getUserRollApi = async(userId:string)=>{
-  return await API.get(`/roll/${userId}`)
+  return await API.get(`/reel/${userId}`)
 }
 
 
@@ -205,7 +218,7 @@ export const rollCommentSentAPi = async (rollId: string, content: string) => {
 
 export const latestRollApi = async (page:number,pageSize:number,)=>{
   try {
-    const response = await API.get('/latest-roll/', {
+    const response = await API.get('/reel/feed/', {
       params: { page, pageSize }, // Pass pagination params
     });
     return response;
@@ -225,11 +238,11 @@ export const updatePostApi = async (postId:string,content:string)=>{
 }
 
 export const reportPostApi  =async(postId:string,reason:ReportReasonType)=>{
-  return await API.post('/report-post',{postId,reason})
+  return await API.post('/post/report',{postId,reason})
 }
 
 export const searchUsersApi = async(query:string)=>{
-  return await API.get(`/users/${query}`)
+  return await API.get(`/profile/users`,{ params: { query }})
 }
 
 export const getLikedUsersApi = async (postId:string)=>{
@@ -237,7 +250,7 @@ export const getLikedUsersApi = async (postId:string)=>{
 }
 
 export const getExploreDataApi = async(page:number,pageSize:number)=>{
-  return await API.get(`explore/${page}/${pageSize}`)
+  return await API.get(`explore/`,{params:{page,pageSize}})
 }
 
 export const getSingePostApi = async(postId:string)=>{
@@ -247,11 +260,12 @@ export const getSingePostApi = async(postId:string)=>{
 }
 
 export const saveItemApi = async(item:SavedItemArrayElement)=>{
-  return await API.post('/saveItem',item)
+  console.log("saved item in saved api -----------------",item)
+  return await API.post('/saveItem/',item)
 }
 
 export const deleteSavedItemApi = async(itemId:string,type:string)=>{
-  return await API.delete(`/saveItem?itemId=${itemId}&type=${type}`)
+  return await API.delete(`/saveItem?itemId=${itemId}&itemType=${type}`)
 }
 
 export const getSavedItemApi = async()=>{

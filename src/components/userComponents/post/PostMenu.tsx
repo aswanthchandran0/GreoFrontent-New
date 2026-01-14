@@ -84,8 +84,15 @@ const PostMenu: React.FC<PostMenuProps> = ({
           await reportPostApi(postId,reason)
           setIsReported(true)
       }catch(err){
+        console.log("error",err)
           console.log(err);
-          toast.error("error in reporting  post");
+          // if(err?.message){
+          //   toast.error(err.message)
+          // }else{
+
+          //   toast.error("error in reporting  post");
+          // }
+           toast.error("error in reporting  post");
       }finally{
         setIsLoading(false)
       }
@@ -198,7 +205,7 @@ const PostMenu: React.FC<PostMenuProps> = ({
               {
              isLoading?(
               <>
-               <div className="relative flex flex-row items-center w-full p-2 border-b border-background-charcoal">
+               <div className=" relative flex flex-row items-center w-full p-2 border-b border-background-charcoal">
                   <span className="absolute transform -translate-x-1/2 left-1/2 text-text-black dark:text-text-white font-golos">
                     Report
                   </span>
@@ -262,9 +269,9 @@ const PostMenu: React.FC<PostMenuProps> = ({
       </div>
     </div>
   );
-  console.log("loggedUser", loggedUser?.user_name);
+  console.log("loggedUser", loggedUser?.username);
   console.log("username", username);
-  return loggedUser?.user_name === username
+  return loggedUser?.username === username
     ? loggedUserPostMenu()
     : userPostMenu();
 };

@@ -11,6 +11,7 @@ export const signUpUser = createAsyncThunk(
     thunkAPI
   ) => {
     try {
+      console.log("request reach hear",userData)
       const response = await signUpApi(userData);
       return response.data.user;
     } catch (error) {
@@ -92,29 +93,25 @@ export const GoogleSignIn = createAsyncThunk(
 )
 
 type UserGender = "prefer not to say" | "male" | "female" | "other";
-type LastSeenOnline = "Everyone" | "private" | "hide";
 
 export interface User {
   id: string;
   profileImage: string;
   name: string;
-  user_name: string;
+  username: string;
   email: string;
-  user_bio: string;
-  lastseen_online: LastSeenOnline;
-  password: string;
-  is_suspended: boolean;
-  user_gender: UserGender;
-  private_account: boolean;
-  publicKey?: string;
+  bio?: string;
+  password?: string;
+  isSuspended: boolean;
+  gender?: UserGender;
   otherUser?:boolean
   socketId?:string
   createdAt?:string
   followersCount?:number
+  no?: number;
   // TACTICAL: for topUsers
   reason?:string,
   _id?:string,
-  bio?:string
 }
 
 interface UserAuthState {
@@ -140,7 +137,11 @@ const UserSlice = createSlice({
       tokenService.clearToken();
     },
     updateUserData:(state,action)=>{
-      if(state.user) state.user = {...state.user, ...action.payload}
+      console.log("action and state in update user datta ==================================",action.payload)
+      console.log("stateeeeeeeeeeeeeeeeeeeeeeeeeeeee----",state.user)
+     if (state.user) {
+    Object.assign(state.user, action.payload);
+  }
     }
   },
   extraReducers: (builder) => {

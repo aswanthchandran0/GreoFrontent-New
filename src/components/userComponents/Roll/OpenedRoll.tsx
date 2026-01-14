@@ -1,10 +1,10 @@
 
 import { IoClose } from "react-icons/io5";
-import { FaRegComment } from "react-icons/fa";
+import { FaHeart, FaRegComment, FaRegHeart } from "react-icons/fa";
 import { IoIosShareAlt } from "react-icons/io";
 import { IoBookmarkOutline } from "react-icons/io5";
 import { useEffect, useState } from "react";
-import {  rollCommentSentAPi, rollGetCommentsApi } from "../../../services/user/api";
+import {  getCommentsApi, postCommentApi, rollCommentSentAPi, rollGetCommentsApi, toggleLikeApi } from "../../../services/user/api";
 import { CommentsDto, IComment,  } from "../../../Types/commentTypes";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -16,6 +16,7 @@ import { IRoll } from "../profile/UserPosts";
 import Comment from "../post/Comment";
 import RollMenu from "./RollMenu";
 import { ExploreI } from "../../../Types/exploreTypes";
+import toast from "react-hot-toast";
  
 
 interface OpenedRollProps {
@@ -34,18 +35,26 @@ const OpenedRoll: React.FC<OpenedRollProps> = ({roll,onClose}) =>
   {
   console.log('roll in open post',roll)
    const [comment,setComment] = useState<string>('')
-   const [comments,setComments] = useState<CommentsDto | null>(null)
-   const [commentsCount,setCommentsCount] = useState(0)
+   const [comments, setComments] = useState<IComment[]>([]);
+  const loggedUser = useSelector((state: RootState) => state.UserReducer.user);
+   const [commentsCount,setCommentsCount] = useState(roll.commentCount || 0)
    const [isPlaying, setIsPlaying] = useState<boolean>(false);
    const [isAudioOn,setIsAudioOn] = useState<boolean>(true)
    const [isRollMenu, setIsRollMenu] = useState<boolean>(false);
+     const [localIsLiked, setLocalIsLiked] = useState<boolean>(roll.isLiked || false);
+     const [likeCount, setLikeCount] = useState<number>(roll.likeCount || 0);
+const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(()=>{
     try{
      const fetchComments = async()=>{
-       const response = await rollGetCommentsApi(roll._id ?? '')
-       setComments(response.data[0])
-       setCommentsCount(response.data[0].length)
+       const response = await getCommentsApi(roll.id ?? "","reel")
+       const commentsArray: IComment[] = Array.isArray(response.data)
+        ? response.data
+        : [response.data];
+
+      setComments(commentsArray);
+     
      console.log('response from the comments',response.data[0])    
      }
      fetchComments()
@@ -56,20 +65,21 @@ const OpenedRoll: React.FC<OpenedRollProps> = ({roll,onClose}) =>
 
   console.log('role in opend file',roll)
 
-    const handleAddComment = (newComment:IComment)=>{
-      console.log("----------------new comment-----------------",newComment)
-      if(comments){
-        const updatedComments = {...comments}
-        updatedComments.comments.unshift(newComment)
-        setComments(updatedComments)
-      }
-    }
+   
+  const handleAddComment = (newComment: IComment) => {
+  setComments(prevComments => [newComment, ...prevComments]);
+};
    // comment sent 
    const handleCommentPost= async()=>{
     try{
-     const response =  await rollCommentSentAPi(roll?._id ?? '',comment)
-     handleAddComment(response.data)
+     const response =  await postCommentApi(roll?.id ?? '','reel',comment)
+    response.data.profileImage = loggedUser?.profileImage
+        response.data.username = loggedUser?.username
+
+        handleAddComment(response.data);
+
      setComment('')
+     setCommentsCount((prev) => prev +1)
     }catch(err){
       console.log('error',err)
     }
@@ -77,13 +87,13 @@ const OpenedRoll: React.FC<OpenedRollProps> = ({roll,onClose}) =>
 
 
    const navigate = useNavigate()
-   const loggedUserName = useSelector((state:RootState)=> state.UserReducer.user?.user_name)
+   const loggedUserName = useSelector((state:RootState)=> state.UserReducer.user?.username)
 
    // profile navigation
     const handleProfileNavigation = ()=>{
     // TACTICAL: Handle fallback for userName based on possible variations in API data
-      if("userName" in roll && roll.userName && roll.userName !== loggedUserName){
-        navigate(`/profile/${roll.userName}`)
+      if("username" in roll && roll.username && roll.username !== loggedUserName){
+        navigate(`/profile/${roll.username}`)
       }
     }
 
@@ -97,7 +107,32 @@ const OpenedRoll: React.FC<OpenedRollProps> = ({roll,onClose}) =>
           }
           setIsPlaying(!isPlaying);
         }
+
       };
+
+    
+const onLikeToggle = async () => {
+  if (loading) return;
+  setLoading(true);
+
+  try {
+    const response = await toggleLikeApi(roll.id ?? "", "reel"); // "reel" type
+    const { liked, totalLikes } = response.data;
+
+    // Update local state
+    setLocalIsLiked(liked);
+    setLikeCount(totalLikes);
+
+  }catch(err){
+console.error("Failed to toggle like:", err);
+    toast.error("Failed to update like status");
+  } finally {
+    setLoading(false);
+  }
+};
+
+      
+  
 
   
  return (
@@ -139,7 +174,7 @@ const OpenedRoll: React.FC<OpenedRollProps> = ({roll,onClose}) =>
             <img  className="object-cover w-full h-full cursor-pointer" src={roll.profileImage || DEFAULT_PROFILE_IMAGE} alt="" />
           </div>
           <span onClick={handleProfileNavigation} className="font-bold cursor-pointer text-text-black font-golos dark:text-text-white">
-          {('userName' in roll ? roll.userName : 'Unknown User')}
+          {('username' in roll ? roll.username : 'Unknown User')}
           </span>
           <div className="flex flex-row ml-auto space-x-3 text-xl font-semibold cursor-pointer text-text-black dark:text-text-white">
             {/* {loggedUser?.user_name === username && (
@@ -154,7 +189,7 @@ const OpenedRoll: React.FC<OpenedRollProps> = ({roll,onClose}) =>
 
         <div className="w-full h-full p-2 space-y-5 overflow-y-auto scrollbar-hide ">
            {
-            comments?.comments.map((comment,index)=>{
+            comments?.map((comment,index)=>{
               return(
               <Comment key={index} comment={comment} />
               )
@@ -171,25 +206,29 @@ const OpenedRoll: React.FC<OpenedRollProps> = ({roll,onClose}) =>
             <div className="flex flex-row items-center p-1 space-x-3">
 
               <div className="flex flex-col items-center justify-center">
-                {/* {isLiked ? (
-                  <FaHeart
-                    className="text-2xl text-red-500 cursor-pointer"
-                    onClick={onLikeToggle} />
-                ) : (
-                  <FaRegHeart
-                    className="text-2xl cursor-pointer dark:text-text-white text-text-charcoal"
-                    onClick={onLikeToggle} />
-                )}
-               <span className="font-golos dark:text-text-white text-text-charcoal">
-          {post.likeCount}
-        </span> */} 
+            {localIsLiked ? (
+    <FaHeart
+      className={`text-2xl cursor-pointer text-red-500 ${loading ? 'animate-ping' : ''}`}
+      onClick={!loading ? onLikeToggle : undefined}
+    />
+  ) : (
+    <FaRegHeart
+      className={`text-2xl cursor-pointer dark:text-text-white text-text-charcoal ${loading ? 'animate-ping' : ''}`}
+      onClick={!loading ? onLikeToggle : undefined}
+    />
+  )}
+  {!loading && (
+    <span className="font-golos dark:text-text-white text-text-charcoal">
+      {likeCount}
+    </span>
+  )}
 
               </div>
 
 
               <div className="flex flex-col items-center justify-center">
                 <FaRegComment className="text-2xl cursor-pointer dark:text-text-white text-text-charcoal" />
-                <p>{commentsCount}</p>
+                <p className="text-white ">{commentsCount}</p>
               </div>
 
               <div className="flex flex-col items-center justify-center">
