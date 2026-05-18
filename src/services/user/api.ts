@@ -8,6 +8,51 @@ import { RollUploadPayload } from "../../components/userComponents/profile/RollU
 import { ReportReasonType } from "../../Types/postTypes";
 import { SavedItemArrayElement } from "../../Types/savedItemTypes";
 import { CreateChatRequest } from "../../Types/userChats/createChatApiType";
+import { GetUsersParams } from "../../interface/getUsersParams";
+
+
+export interface AuthResponse {
+  user: {
+    id: string;
+    name: string;
+    username: string;
+    email: string;
+    profileImage?: string;
+    bio?: string;
+    gender?: string;
+    isVerified: boolean;
+    followersCount: number;
+    followingCount: number;
+    postCount: number;
+    createdAt: string;
+    updatedAt?: string;
+  };
+  tokens: {
+    accessToken: string;
+    refreshToken: string;
+  };
+}
+
+export interface SignupResponse {
+  user: {
+    id: string;
+    name: string;
+    username: string;
+    email: string;
+    profileImage?: string;
+    bio?: string;
+    gender?: string;
+    isVerified: boolean;
+    followersCount: number;
+    followingCount: number;
+    postCount: number;
+    createdAt: string;
+  };
+  otpSent: boolean;
+}
+
+
+
 const API = axios.create({
   baseURL: import.meta.env.VITE_BASE_URL,
 });
@@ -50,7 +95,7 @@ API.interceptors.response.use(
       try {
         const response = await API.post("/auth/refresh", { refreshToken });
         console.log('after refresh token retrive',response.data);
-        const { accessToken, refreshToken: newRefreshToken } = response.data;
+        const { accessToken, refreshToken: freshToken } = response.data;
         tokenService.setToken(accessToken, newRefreshToken);
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return API(originalRequest);
@@ -64,31 +109,37 @@ API.interceptors.response.use(
   }
 );
 
-export const signUpApi = async (userData: {
-  name: string;
-  email: string;
-  password: string;
-}) => {
-  console.log("request was reaching in this api and its auth si")
-  return await API.post("/auth/sign-up", userData);
-};
 
-export const verifyOtp = async (userId: string, code: string) => {
 
-  return await API.post("/auth/verify-otp", { userId, code  });
+export const signUpApi = async (userData: { name: string; email: string; password: string }) => {
+  const response = await API.post<SignupResponse>("/auth/sign-up", userData);
+  return response;
 };
 
 export const SigninApi = async (email: string, password: string) => {
-  return await API.post("/auth/sign-in", { email, password });
+  const response = await API.post<AuthResponse>("/auth/sign-in", { email, password });
+  return response;
 };
 
 export const GoogleSignUpApi = async (token: string) => {
-  return await API.post("/auth/sign-up-with-google", {token})
-}
+  const response = await API.post<AuthResponse>("/auth/sign-up-with-google", { token });
+  return response;
+};
 
 export const GoogleSignInApi = async (token: string) => {
-  return await API.post('/auth/sign-in-with-google', { token })
-}
+  const response = await API.post<AuthResponse>("/auth/sign-in-with-google", { token });
+  return response;
+};
+
+export const verifyOtpApi = async (userId: string, code: string) => {
+  const response = await API.post<AuthResponse>("/auth/verify-otp", { userId, code });
+  return response;
+};
+
+
+
+
+
 
 export const forgotPasswordTokenGenerateAPI = async (email: string) => {
   return await API.post("/auth/generate-forgot-password-token", { email });
@@ -102,31 +153,55 @@ export const resentOtpApi = async (email:string) => {
 return await API.post('/auth/resent-otp', { email })
 }
 
-export const profileDetailsFetchApi = async (username:string) => {
-  const result =  await API.get(`/profile/${username}`)
-  console.log("profiel result",result)
-  return result
+export const profileDetailsFetchApi = async (username: string) => {
+  try {
+    const response = await API.get(`/user/${username}`);
+    console.log('Profile API response:', response.data);
+    return response;
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    throw error;
+  }
 }
 
-export const updateProfileApi = async (data:FormData)=>{
-  return await API.patch('/profile/update', data)  
-}
+export const updateProfileApi = async (data: {
+  name?: string;
+  username?: string;
+  bio?: string;
+  gender?: string;
+  profileImage?: string;
+}) => {
+  try {
+    const response = await API.patch('/user/profile', data);
+    return response;
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    throw error;
+  }
+};
 
 export const checkUsernameApi = async (username:string)=>{
- return await API.get(`/profile/check-username/${username}`)
+ return await API.get(`/user/check-username/${username}`)
 }
 
 export const followUserApi = async (followerId: string, followeeId: string) => {
-  return await API.post('/profile/follow', { followerId, followeeId })
+  return await API.post('/user/follow', { followerId, followeeId })
 }
 
 export const unfollowUserApi = async (followerId: string, followeeId: string) => {
-  return await API.post('/profile/unfollow', { followerId, followeeId })
+  return await API.post('/user/unfollow', { followerId, followeeId })
 }
 
-export const postUploadApi = async (formData: FormData) => {
-  return  await API.post('/post', formData)
+
+// Change from FormData to JSON payload
+export const postUploadApi = async (payload: {
+  mediaUrls: string[];
+  userId: string;
+  content?: string;
+}) => {
+  return await API.post('/post', payload);
 }
+
 
 export const getUserFeedApi = async (skip:number,limit:number) => {
 
@@ -146,13 +221,7 @@ export const toggleLikeApi = async (targetId:string,targetType:string,)=>{
 
 
 
-export const getCommentsApi = async (targetId:string,targetType = 'post') => {
-  return await API.get(`/post/comments/${targetId}/${targetType}`,)
-}
 
-export const postCommentApi = async(targetId:string,targetType:string,content:string) =>{
-  return await API.post('/post/post-comment',{targetId,targetType,content})
-}
 
 
 
@@ -184,9 +253,13 @@ export const getFollowingApi = async(username:string)=>{
   return await API.get(`/profile/following/${username}`)
 }
 
-export const rollUploadApi  = async(payload:RollUploadPayload)=>{
-  console.log('data in roll upload',payload)
-  return await API.post('/reel',payload)
+export const createReelApi = async (payload: {
+  mediaUrl: string;
+  thumbnail: string;
+  content?: string;
+}) => {
+  console.log('data in reel upload', payload);
+  return await API.post('/reel', payload);
 }
 
 export const getUserPostApi = async(userId:string)=>{
@@ -200,21 +273,7 @@ export const getUserRollApi = async(userId:string)=>{
 
 
 
-export const likeRollApi = async (likeIds: string[], unlikeIds: string[]) => {
-  return await API.post('/roll_like_post', { likeIds, unlikeIds });
-};
 
-
-
-export const rollGetCommentsApi = async (rollId: string) => {
-  return await API.get(`/roll_get_comments/${rollId}`,)
-}
-
-
-export const rollCommentSentAPi = async (rollId: string, content: string) => {
-  console.log('post id and commment', rollId, content)
-  return await API.post(`/roll_post_comment`, { rollId, content })
-}
 
 export const latestRollApi = async (page:number,pageSize:number,)=>{
   try {
@@ -229,21 +288,55 @@ export const latestRollApi = async (page:number,pageSize:number,)=>{
 }
 
 
-export const deletePostApi = async(postId:string)=>{
-  return await API.delete(`/post/${postId}`)
+export interface CreatePostRequest {
+  userId: string; // Required, not optional
+  mediaUrls: string[];
+  content?: string;
 }
 
-export const updatePostApi = async (postId:string,content:string)=>{
-  return await API.patch(`/post`,{content,postId})
-}
+export const createPostApi = async (postData: CreatePostRequest) => {
+  try {
+    const response = await API.post('/post', postData);
+    return response;
+  } catch (error) {
+    console.error('Error creating post:', error);
+    throw error;
+  }
+};
 
-export const reportPostApi  =async(postId:string,reason:ReportReasonType)=>{
-  return await API.post('/post/report',{postId,reason})
-}
+export const deletePostApi = async (postId: string) => {
+  const response = await API.delete(`/post/${postId}`);
+  return response;
+};
 
-export const searchUsersApi = async(query:string)=>{
-  return await API.get(`/profile/users`,{ params: { query }})
-}
+export const updatePostApi = async (postId: string, content: string) => {
+  const response = await API.patch('/post', { postId, content });
+  return response;
+};
+
+
+export const searchUsersApi = async (query: string) => {
+  try {
+    // Use the new users endpoint with search parameter
+    const response = await API.get('/user', { 
+      params: { 
+        search: query,
+        limit: 10,
+        page: 1,
+        sortBy: "recent",
+        filterBy: "all"
+      } 
+    });
+    
+    // Return the users from the response
+    return {
+      data: response.data.data.users
+    };
+  } catch (error) {
+    console.error("Error searching users:", error);
+    throw error;
+  }
+};
 
 export const getLikedUsersApi = async (postId:string)=>{
   return await API.get(`/likedUsers/${postId}`)
@@ -259,18 +352,11 @@ export const getSingePostApi = async(postId:string)=>{
 
 }
 
-export const saveItemApi = async(item:SavedItemArrayElement)=>{
-  console.log("saved item in saved api -----------------",item)
-  return await API.post('/saveItem/',item)
-}
 
 export const deleteSavedItemApi = async(itemId:string,type:string)=>{
   return await API.delete(`/saveItem?itemId=${itemId}&itemType=${type}`)
 }
 
-export const getSavedItemApi = async()=>{
-  return await API.get('/saveItem')
-}
 
 export const saveNotification = async(userId:string,entityId:string,mediaUrl:string,message:string,type:string)=>{
    return await API.post("/notification",{userId,entityId,mediaUrl,message,type})
@@ -293,6 +379,204 @@ export const deleteRollApi = async(rollId:string)=>{
 }
 
 
-export const  getUserProfiles = async(page:number,limit:number)=>{
-  return await API.get(`/profiles/${page}/${limit}`)
-}
+export const getUsers = async (params:GetUsersParams) => {
+  return await API.get('/user', { params });
+};
+
+export const getUserProfiles = async (page: number, limit: number) => {
+  return await getUsers({ page, limit, sortBy: "recent", filterBy: "all" });
+};
+
+
+// Get single user profile by username
+export const getUserProfileByUsername = async (username: string) => {
+  return await API.get(`/user/${username}`);
+};
+
+
+
+
+export const getSavedItemApi = async () => {
+  try {
+    const response = await API.get('/saveItem');
+    return response;
+  } catch (error) {
+    console.error("Error getting saved items:", error);
+    throw error;
+  }
+};
+
+// Update toggleSaveApi to use the correct endpoints
+
+export const toggleSaveApi = async (targetId: string, targetType: string, currentIsSaved: boolean) => {
+  try {
+    // Normalize the item type to uppercase
+    const itemType = targetType === 'reel' ? 'REEL' : 'POST';
+    
+    if (currentIsSaved) {
+      // Unsave the item
+      const response = await unsaveItemApi(targetId, itemType);
+      return { data: { saved: false } };
+    } else {
+      // Save the item
+      const response = await saveItemApi(targetId, itemType);
+      return { data: { saved: true } };
+    }
+  } catch (error) {
+    console.error("Error toggling save:", error);
+    throw error;
+  }
+};
+
+// Also update saveItemApi and unsaveItemApi to accept the correct type
+export const saveItemApi = async (itemId: string, itemType: 'POST' | 'REEL') => {
+  try {
+    const response = await API.post('/saveItem/', { 
+      itemId, 
+      itemType 
+    });
+    return response;
+  } catch (error) {
+    console.error("Error saving item:", error);
+    throw error;
+  }
+};
+
+export const unsaveItemApi = async (itemId: string, itemType: 'POST' | 'REEL') => {
+  try {
+    const response = await API.delete(`/saveItem/?itemId=${itemId}&itemType=${itemType}`);
+    return response;
+  } catch (error) {
+    console.error("Error unsaving item:", error);
+    throw error;
+  }
+};
+
+// Get post details
+export const getPostDetailsApi = async (postId: string) => {
+  const response = await API.get(`/post/${postId}`);
+  return response;
+};
+
+
+export const getCommentsApi = async (targetId: string, targetType: string) => {
+  const response = await API.get(`/comment/${targetId}/${targetType}`);
+  return response;
+};
+
+export const postCommentApi = async (
+  targetId: string, 
+  targetType: string, 
+  content: string,
+  parentCommentId?: string
+) => {
+  const response = await API.post('/comment', {
+    targetId,
+    targetType,
+    content,
+    parentCommentId
+  });
+  return response;
+};
+
+export const deleteCommentApi = async (
+  commentId: string,
+  targetId: string,
+  targetType: string
+) => {
+  const response = await API.delete(`/comment/${commentId}/${targetId}/${targetType}`);
+  return response;
+};
+
+export const likeCommentApi = async (commentId: string, targetId: string, targetType: string) => {
+  const response = await API.post(`/comment/${commentId}/${targetId}/${targetType}/like`);
+  return response;
+};
+
+export const unlikeCommentApi = async (commentId: string, targetId: string, targetType: string) => {
+  const response = await API.delete(`/comment/${commentId}/${targetId}/${targetType}/like`);
+  return response;
+};
+
+export const editCommentApi = async (
+  commentId: string,
+  targetId: string,
+  targetType: string,
+  content: string
+) => {
+  const response = await API.put(`/comment/${commentId}/${targetId}/${targetType}`, { content });
+  return response;
+};
+
+
+// Share post
+export const sharePostApi = async (postId: string, shareTo: 'copy' | 'message' | 'story' = 'copy') => {
+  const response = await API.post(`/post/${postId}/share`, { shareTo });
+  return response;
+};
+
+// Get post statistics
+export const getPostStatsApi = async (postId: string) => {
+  const response = await API.get(`/post/${postId}/stats`);
+  return response;
+};
+
+
+export const reportContentApi = async (
+  targetId: string,
+  targetType: 'POST' | 'REEL',
+  reason: string,
+  description?: string
+) => {
+  const response = await API.post('/report', {
+    targetId,
+    targetType,
+    reason,
+    description
+  });
+  return response;
+};
+
+export const updateReelApi = async (reelId: string, content: string) => {
+  try {
+    const response = await API.patch('/reel', { 
+      reelId, 
+      content 
+    });
+    return response;
+  } catch (error) {
+    console.error('Error updating reel:', error);
+    throw error;
+  }
+};
+
+export const deleteReelApi = async (reelId: string) => {
+  try {
+    const response = await API.delete(`/reel/${reelId}`);
+    return response;
+  } catch (error) {
+    console.error('Error deleting reel:', error);
+    throw error;
+  }
+};
+
+export const getExploreFeedApi = async (page: number = 1, pageSize: number = 20) => {
+  try {
+    const response = await API.get(`/explore?page=${page}&pageSize=${pageSize}`);
+    return response;
+  } catch (error) {
+    console.error('Error fetching explore feed:', error);
+    throw error;
+  }
+};
+
+
+export const getAllReelsApi = async (page: number = 1, pageSize: number = 10) => {
+  try {
+    const response = await API.get(`/reel/feed?page=${page}&pageSize=${pageSize}`);
+    return response;
+  } catch (error) {
+    console.error('Error fetching reels:', error);
+    throw error;
+  }
+};

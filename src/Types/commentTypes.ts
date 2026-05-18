@@ -1,18 +1,27 @@
 // src/Types/commentTypes.ts
 
-export interface IComment {
+export interface IReply {
   id: string;
-  targetId: string;
-  targetType: 'post' | 'reel';
   userId: string;
   username: string;
   profileImage?: string;
   content: string;
-  createdAt: string; // use string for frontend to avoid Date parsing issues
+  createdAt: Date;
+  likesCount: number;
+  isLiked: boolean;
+  isDeleted: boolean;
 }
 
-// If you want a wrapper for multiple comments for a post:
-export interface CommentsDto {
-  postId: string; // targetId
-  comments: IComment[];
+export interface IComment {
+  id: string;
+  userId: string;
+  username: string;
+  profileImage?: string;
+  content: string;
+  createdAt: Date;
+  likesCount: number;
+  isLiked: boolean;
+  isDeleted: boolean;
+  replies?: IReply[];
+  replyCount?: number;
 }

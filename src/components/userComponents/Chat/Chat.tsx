@@ -107,7 +107,8 @@ const Chat: React.FC = () => {
   const observerRef = useRef<IntersectionObserver | null>(null);
 
 
-  
+// In your Chat.tsx component, update the call handlers:
+
 // Voice Call Handler
 const handleVoiceCall = async () => {
   if (!opponentUser?.id) {
@@ -117,8 +118,20 @@ const handleVoiceCall = async () => {
   }
   
   try {
-    console.log('📞 Starting voice call to:', opponentUser.id);
-    await initiateCall(opponentUser.id, 'voice');
+    console.log('📞 Starting voice call to:', {
+      id: opponentUser.id,
+      name: opponentUser.name,
+      image: opponentUser.profileImage
+    });
+    
+    await initiateCall(
+      opponentUser.id, 
+      opponentUser.profileImage || '', 
+      opponentUser.name, 
+      'voice'
+    );
+    
+    toast.success(`📞 Calling ${opponentUser.name}...`);
   } catch (error) {
     console.error('Failed to start call:', error);
     toast.error('Failed to start call. Please check your microphone permissions.');
@@ -134,14 +147,25 @@ const handleVideoCall = async () => {
   }
   
   try {
-    console.log('📹 Starting video call to:', opponentUser.id);
-    await initiateCall(opponentUser.id, 'video');
+    console.log('📹 Starting video call to:', {
+      id: opponentUser.id,
+      name: opponentUser.name,
+      image: opponentUser.profileImage
+    });
+    
+    await initiateCall(
+      opponentUser.id, 
+      opponentUser.profileImage || '', 
+      opponentUser.name, 
+      'video'
+    );
+    
+    toast.success(`📹 Video calling ${opponentUser.name}...`);
   } catch (error) {
     console.error('Failed to start video call:', error);
     toast.error('Failed to start video call. Please check your camera and microphone permissions.');
   }
 };
-
   
   const isOpponentOnline = useUserOnlineStatus({
     userId: opponentUserId,

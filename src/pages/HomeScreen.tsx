@@ -1,17 +1,12 @@
-
+// src/screens/HomeScreen.tsx
 import Post from '../components/userComponents/post/Post'
 
-
-const HomeScreen = ()=>{
-
-
-    return(
-       <>
-       <div className='flex h-full dark:bg-background-dark bg-background-light md:max-h-[90vh] max-h-[83vh] lg:px-16 justify-center scroll-smooth '>
+const HomeScreen = () => {
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-background-dark">
       <Post/>
-       </div>
-         </>
-    )
-}
+    </div>
+  );
+};
 
-export default HomeScreen
+export default HomeScreen;

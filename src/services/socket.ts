@@ -15,7 +15,14 @@ let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
 
 export const connectSocket = (userId: string, token: string) => {
   if (!socket) {
-    socket = io(`${window.location.protocol}//${window.location.hostname}:5000`, {
+
+       const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    
+    // For HTTPS frontend, connect to same origin (Vite will proxy)
+    const socketUrl = `${protocol}//${hostname}:${window.location.port}`;
+
+    socket = io(socketUrl, {
       auth: { token },
       query: { userId },
       transports: ["websocket"],

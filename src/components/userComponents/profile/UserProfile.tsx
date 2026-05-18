@@ -1,3 +1,6 @@
+// src/components/userComponents/profile/UserProfile.tsx
+
+import { motion } from "framer-motion";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/store";
 import { useNavigate, useParams } from "react-router-dom";
@@ -11,7 +14,15 @@ import { useEffect, useState } from "react";
 import { User } from "../../../redux/slices/userSlice";
 import FollowersFollowing from "./FollowersFollowing";
 import Settings from "./Settings";
-import { IoMdSettings } from "react-icons/io";
+import { 
+  IoMdSettings, 
+  IoMdPersonAdd, 
+  IoMdCheckmark,
+  IoMdChatbubbles,
+  IoMdCreate,
+  IoMdCalendar
+} from "react-icons/io";
+import { FaRegCalendarAlt } from "react-icons/fa";
 import { useSocket } from "../../../context/SocketContext";
 
 export type showComponentType = "Followers" | "Following" | null;
@@ -22,7 +33,10 @@ interface UserProfileProps {
   initialFollowersCount: number;
   followingCount: number;
   postCount: number;
-  isCurrentUser: boolean; // Add this prop
+  isCurrentUser: boolean;
+  onFollowChange?: (isFollowing: boolean) => void;
+  onFollowersCountChange?: (count: number) => void;
+  onEditClick?: () => void;
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({
@@ -31,30 +45,24 @@ const UserProfile: React.FC<UserProfileProps> = ({
   initialFollowersCount,
   followingCount,
   postCount,
-  isCurrentUser, // Add this prop
+  isCurrentUser,
+  onFollowChange,
+  onFollowersCountChange,
+  onEditClick,
 }) => {
   const user = useSelector((state: RootState) => state.UserReducer.user);
   const { username } = useParams();
   const navigate = useNavigate();
 
-  const handleProfileEdit = () => {
-    if (isCurrentUser) { // Use isCurrentUser prop instead
-      navigate(`/profile/${username}/edit`);
-    }
-  };
-
-  // follow unfollow
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
   const [followersCount, setFollowersCount] = useState(initialFollowersCount);
   const [isFollowingLoading, setIsFollowingLoading] = useState(false);
-  const [isFollowerFollowingComponent, setIsFollowerFollowingComponent] =
-    useState(false);
-  const [showComponent, setShowComponet] = useState<showComponentType>(null);
+  const [isFollowerFollowingComponent, setIsFollowerFollowingComponent] = useState(false);
+  const [showComponent, setShowComponent] = useState<showComponentType>(null);
   const [isSettings, setIsSettings] = useState<boolean>(false);
   const { socket } = useSocket();
   const localUser = useSelector((state: RootState) => state.UserReducer.user);
   
-  // Update followers count and following status when initial props change
   useEffect(() => {
     setFollowersCount(initialFollowersCount);
     setIsFollowing(initialIsFollowing);
@@ -62,219 +70,275 @@ const UserProfile: React.FC<UserProfileProps> = ({
 
   const handleFollow = async () => {
     if (!user?.id || !profileUser?.id) return;
+    setIsFollowingLoading(true);
 
-    if (isFollowing) {
-      setIsFollowingLoading(true);
-      const response = await unfollowUserApi(user.id, profileUser.id);
-      if (response.status === 200) {
-        setIsFollowing(false);
-        setFollowersCount((prev: number) => prev - 1);
-        setIsFollowingLoading(false);
+    try {
+      if (isFollowing) {
+        const response = await unfollowUserApi(user.id, profileUser.id);
+        if (response.status === 200) {
+          const newCount = followersCount - 1;
+          setIsFollowing(false);
+          setFollowersCount(newCount);
+          onFollowChange?.(false);
+          onFollowersCountChange?.(newCount);
 
-        // remove notify from user notification
-        const notificationResponse = await deleteNotification(
-          profileUser.id,
-          profileUser.id,
-          'follow'
-        );
-        if (notificationResponse.data === true) {
-          console.log("delete notification was working now");
-          const notificationData = {
+          await deleteNotification(profileUser.id, profileUser.id, 'follow');
+          socket?.emit("removeNotification", {
             userId: profileUser.id,
             entityId: profileUser.id,
             initiatorId: localUser?.id,
             type: 'follow'
-          };
-          socket?.emit("removeNotification", notificationData);
+          });
         }
       } else {
-        setIsFollowingLoading(false);
-      }
-    } else {
-      setIsFollowingLoading(true);
-      const response = await followUserApi(user.id, profileUser.id);
-      if (response.status === 200) {
-        setIsFollowing(true);
-        setFollowersCount((prev: number) => prev + 1);
-        setIsFollowingLoading(false);
+        const response = await followUserApi(user.id, profileUser.id);
+        if (response.status === 200) {
+          const newCount = followersCount + 1;
+          setIsFollowing(true);
+          setFollowersCount(newCount);
+          onFollowChange?.(true);
+          onFollowersCountChange?.(newCount);
 
-        // notify following
-        const notifyingMessage = "start following you";
-        const SaveNotificatonResponse = await saveNotification(
-          profileUser.id,
-          profileUser.id,
-          "",
-          notifyingMessage,
-          "follow"
-        );
+          const notifyingMessage = "started following you";
+          const SaveNotificatonResponse = await saveNotification(
+            profileUser.id,
+            profileUser.id,
+            "",
+            notifyingMessage,
+            "follow"
+          );
 
-        if (SaveNotificatonResponse) {
-          socket?.emit("sendNotification", SaveNotificatonResponse.data);
+          if (SaveNotificatonResponse) {
+            socket?.emit("sendNotification", SaveNotificatonResponse.data);
+          }
         }
-      } else {
-        setIsFollowingLoading(false);
       }
+    } catch (error) {
+      console.error("Follow error:", error);
+    } finally {
+      setIsFollowingLoading(false);
     }
   };
 
-  console.log("profile user", profileUser);
-
-  // Navigate to the message page
   const handleMessageClick = () => {
     if (profileUser?.id) {
       navigate(`/chat/${profileUser.id}`);
     }
   };
 
-  // handle onClose of followingComponent
-  const OnCloseFollowerFollowingComponent = () => {
-    setIsFollowerFollowingComponent(false);
+  const handleProfileEdit = () => {
+    if (onEditClick) {
+      onEditClick();
+    }
   };
 
-  // handle show followers , following component
-  const handleShowComponet = (data: showComponentType) => {
-    setShowComponet(data);
+  const handleShowComponent = (data: showComponentType) => {
+    setShowComponent(data);
     setIsFollowerFollowingComponent(true);
   };
 
-  console.log("is following", isFollowing);
+  const formatDate = (date?: string | Date) => {
+    if (!date) return "Joined recently";
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    const now = new Date();
+    const diffMonths = (now.getFullYear() - dateObj.getFullYear()) * 12 + now.getMonth() - dateObj.getMonth();
+    if (diffMonths < 1) return "Joined recently";
+    if (diffMonths < 12) return `Joined ${diffMonths} months ago`;
+    const years = Math.floor(diffMonths / 12);
+    return `Joined ${years} ${years === 1 ? 'year' : 'years'} ago`;
+  };
 
   return (
-    <div className="flex flex-col items-center justify-center w-full ">
-      <div className="overflow-hidden rounded-md cursor-pointer w-80 h-72">
-        <img
-          className="object-cover w-full h-full"
-          src={
-            profileUser?.profileImage
-              ? profileUser.profileImage
-              : "https://img.freepik.com/free-vector/businessman-character-avatar-isolated_24877-60111.jpg?t=st=1729611509~exp=1729615109~hmac=f56084f44329d588f81849bc897a8533f197f38f12e1fd5d08aca16c67adffb4&w=740"
-          }
-          alt={profileUser?.name || "User profile"}
-        />
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="relative"
+    >
+      {/* Cover Photo Area */}
+      <div className="relative h-48 sm:h-56 md:h-64 lg:h-72 rounded-2xl overflow-hidden bg-gradient-to-r from-purple-500 to-pink-500">
+        <div className="absolute inset-0 bg-black/20" />
       </div>
 
-      <div className="flex flex-col items-center justify-center space-y-2 ">
-        <div className="flex flex-col items-center justify-center">
-          <span className="text-2xl font-semibold cursor-pointer font-zilla text-text-charcoal dark:text-text-white">
-            {profileUser?.name ?? "user"}
-          </span>
-          <span className="text-sm font-semibold cursor-pointer font-zilla text-text-charcoal dark:text-text-Grayish">
-            {profileUser?.username ?? "username"}
-          </span>
-        </div>
-
-        <div className="flex flex-row space-x-3 dark:text-text-white ">
-          <div className="flex flex-col items-center justify-center">
-            <span className="text-base font-medium cursor-pointer font-golos">
-              followers
-            </span>
-            <span
-              onClick={() => handleShowComponet("Followers")}
-              className="text-xl font-semibold cursor-pointer font-golos"
-            >
-              {followersCount ?? 0}
-            </span>
-          </div>
-
-          <div className="flex flex-col items-center justify-center">
-            <span className="text-base font-medium cursor-pointer font-golos">
-              following
-            </span>
-            <span
-              onClick={() => handleShowComponet("Following")}
-              className="text-xl font-semibold cursor-pointer font-golos"
-            >
-              {followingCount ?? 0}
-            </span>
-          </div>
-
-          <div className="flex flex-col items-center justify-center">
-            <span className="text-base font-medium cursor-pointer font-golos">
-              post
-            </span>
-            <span className="text-xl font-semibold cursor-pointer font-golos">
-              {postCount ?? 0}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-center justify-center dark:text-text-white">
-          <span className="cursor-pointer">Bio:</span>
-          <span className="w-full cursor-pointer max-w-80">
-            {profileUser?.bio}
-          </span>
-        </div>
-      </div>
-
-      <div className="flex flex-row py-3 space-x-4">
-        {!isCurrentUser ? ( // Changed from profileUser?.otherUser to !isCurrentUser
-          <>
-            <button
-              onClick={handleFollow}
-              className="p-1 px-2 bg-indigo-500 rounded hover:bg-indigo-600 text-text-white"
-              disabled={isFollowingLoading}
-            >
-              {isFollowingLoading ? (
-                <span>Loading...</span>
-              ) : isFollowing ? (
-                "Following"
-              ) : (
-                "Follow"
-              )}
-            </button>
-            <button
-              onClick={handleMessageClick}
-              className="p-1 px-2 rounded dark:bg-text-white dark:text-text-charcoal bg-text-charcoal text-text-white"
-            >
-              Message
-            </button>
-          </>
-        ) : (
-          <div className="flex space-x-2">
-            <button
-              onClick={handleProfileEdit}
-              className="p-1 px-2 bg-indigo-500 rounded hover:bg-indigo-600 text-text-white"
-            >
-              Edit Profile
-            </button>
-
-            <button
-              onClick={() => setIsSettings(!isSettings)}
-              className={`relative flex items-center ${isSettings ? 'bg-background-charcoal' : 'bg-background-light'} justify-center p-1 px-8 shadow overflow-hidden rounded text-text-black`}
-            >
-              {/* Text */}
-              <span
-                className={`absolute transition-all duration-300 ease-in-out ${
-                  isSettings
-                    ? "opacity-0 translate-x-[-10px]"
-                    : "opacity-100 translate-x-0"
-                }`}
-              >
-                settings
-              </span>
-
-              {/* Icon */}
-              <IoMdSettings
-                className={`absolute text-xl text-text-white transition-all duration-300 ease-in-out ${
-                  isSettings
-                    ? "opacity-100 translate-x-0"
-                    : "opacity-0 translate-x-[10px]"
-                }`}
+      {/* Profile Info Section */}
+      <div className="relative px-4 sm:px-6">
+        {/* Avatar */}
+        <div className="absolute -top-16 left-4 sm:left-6">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full blur-md opacity-50" />
+            <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-white dark:bg-gray-900 p-1 shadow-xl">
+              <img
+                className="w-full h-full rounded-full object-cover"
+                src={
+                  profileUser?.profileImage
+                    ? profileUser.profileImage
+                    : `https://ui-avatars.com/api/?background=6366f1&color=fff&bold=true&size=128&name=${encodeURIComponent(profileUser?.name || "User")}`
+                }
+                alt={profileUser?.name || "User profile"}
               />
-            </button>
+              {profileUser?.isVerified && (
+                <div className="absolute bottom-1 right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900">
+                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+            </div>
           </div>
-        )}
+        </div>
+
+        {/* Stats and Actions */}
+        <div className="pt-20 sm:pt-24 pb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            {/* User Info */}
+            <div className="text-center sm:text-left">
+              <div className="flex items-center gap-2 justify-center sm:justify-start">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+                  {profileUser?.name || "User"}
+                </h1>
+                {profileUser?.isVerified && (
+                  <svg className="w-6 h-6 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </div>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                @{profileUser?.username}
+              </p>
+              {profileUser?.bio && (
+                <p className="text-gray-700 dark:text-gray-300 mt-3 max-w-md">
+                  {profileUser.bio}
+                </p>
+              )}
+              
+              {/* Additional Info */}
+              <div className="flex flex-wrap gap-4 mt-4 text-sm text-gray-500 dark:text-gray-400">
+                <div className="flex items-center gap-1">
+                  <FaRegCalendarAlt className="w-4 h-4" />
+                  <span>{formatDate(profileUser?.createdAt)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="flex gap-8 justify-center sm:justify-end">
+              <div 
+                onClick={() => handleShowComponent("Followers")}
+                className="text-center cursor-pointer group"
+              >
+                <div className="text-2xl font-bold text-gray-900 dark:text-white group-hover:text-purple-500 transition-colors">
+                  {followersCount}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-purple-500 transition-colors">
+                  Followers
+                </div>
+              </div>
+              <div 
+                onClick={() => handleShowComponent("Following")}
+                className="text-center cursor-pointer group"
+              >
+                <div className="text-2xl font-bold text-gray-900 dark:text-white group-hover:text-purple-500 transition-colors">
+                  {followingCount}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-purple-500 transition-colors">
+                  Following
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {postCount}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  Posts
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-3 mt-6">
+            {!isCurrentUser ? (
+              <>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleFollow}
+                  disabled={isFollowingLoading}
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-full font-medium transition-all duration-300 ${
+                    isFollowing
+                      ? "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-700"
+                      : "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg"
+                  } ${isFollowingLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  {isFollowingLoading ? (
+                    <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  ) : isFollowing ? (
+                    <>
+                      <IoMdCheckmark className="w-5 h-5" />
+                      <span>Following</span>
+                    </>
+                  ) : (
+                    <>
+                      <IoMdPersonAdd className="w-5 h-5" />
+                      <span>Follow</span>
+                    </>
+                  )}
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleMessageClick}
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-full font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300"
+                >
+                  <IoMdChatbubbles className="w-5 h-5" />
+                  <span>Message</span>
+                </motion.button>
+              </>
+            ) : (
+              <>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleProfileEdit}
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-full font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg transition-all duration-300"
+                >
+                  <IoMdCreate className="w-5 h-5" />
+                  <span>Edit Profile</span>
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setIsSettings(true)}
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-full font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300"
+                >
+                  <IoMdSettings className="w-5 h-5" />
+                  <span>Settings</span>
+                </motion.button>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
+      {/* Modals */}
       {isFollowerFollowingComponent && (
         <FollowersFollowing
           showComponent={showComponent}
-          onClose={OnCloseFollowerFollowingComponent}
+          onClose={() => setIsFollowerFollowingComponent(false)}
+          userId={profileUser?.id}
         />
       )}
 
-      {isSettings && <Settings onClose={() => setIsSettings(false)} user={user} />}
-    </div>
+      {isSettings && (
+        <Settings 
+          onClose={() => setIsSettings(false)} 
+          user={profileUser}
+          followersCount={followersCount}
+          followingCount={followingCount}
+          postCount={postCount}
+        />
+      )}
+    </motion.div>
   );
 };
 

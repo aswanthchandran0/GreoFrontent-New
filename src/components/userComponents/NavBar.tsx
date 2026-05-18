@@ -1,73 +1,69 @@
-import { NavLink } from "react-router-dom";
+// src/components/layout/NavBar.tsx
 
-//icons
-import { FiSearch } from "react-icons/fi";
-import { FaXmark } from "react-icons/fa6";
-import React, { useEffect, useState } from "react";
-import { GoHomeFill } from "react-icons/go";
-import { GoHome } from "react-icons/go";
-import { MdOutlineExplore } from "react-icons/md";
-import { MdExplore } from "react-icons/md";
-import { PiPlayCircle } from "react-icons/pi";
-import { PiPlayCircleBold } from "react-icons/pi";
-import { PiPlusSquareBold } from "react-icons/pi";
-import { HiOutlineChatBubbleOvalLeft } from "react-icons/hi2";
-import { HiChatBubbleOvalLeft } from "react-icons/hi2";
-import { FaRegUser } from "react-icons/fa6";
-import { FaUser } from "react-icons/fa6";
+import React, { useEffect, useState, useRef } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import { debounce } from "lodash";
+
+// Icons
+import { GoHome, GoHomeFill } from "react-icons/go";
+import { MdExplore, MdOutlineExplore } from "react-icons/md";
+import { PiPlayCircle, PiPlayCircleBold, PiPlusSquareBold } from "react-icons/pi";
+import { HiOutlineChatBubbleOvalLeft, HiChatBubbleOvalLeft } from "react-icons/hi2";
+import { FaUser, FaRegUser, FaSearch, FaTimes } from "react-icons/fa";
 import { IoMdNotifications } from "react-icons/io";
+
+// Components
+import SearchedUsersList from "./SearchedUsersList";
+import Notification from "./notification/Notification";
+
+// Services & Types
+import { searchUsersApi, getUserNotificationApi } from "../../services/user/api";
+import { User } from "../../redux/slices/userSlice";
+import { IPost } from "../../Types/postTypes";
+import { INotification } from "../../Types/notifications/notificationTypes";
 import { useSelector } from "react-redux";
 import { RootState } from "../../redux/store";
-import { debounce } from "lodash";
-import toast from "react-hot-toast";
-import {
-  getUserNotificationApi,
-  searchUsersApi,
-} from "../../services/user/api";
-import SearchedUsersList from "./SearchedUsersList";
-import { User } from "../../redux/slices/userSlice";
-import UploadOption from "./profile/UploadOption";
-import { IPost } from "../../Types/postTypes";
-import Notification from "./notification/Notification";
-import { INotification } from "../../Types/notifications/notificationTypes";
-// import { useSocket } from "../../context/SocketContext";
+
 
 interface Props {
   onNewPost: (post: IPost) => void;
 }
+
 const NavBar: React.FC<Props> = ({ onNewPost }) => {
   const [searchText, setSearchText] = useState<string>("");
-  const user = useSelector((state: RootState) => state.UserReducer.user);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [notifications, setNotifications] = useState<INotification[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [searchResults, setSearchResults] = useState<User[]>([]);
-  const [isUploadOptionComponent, setIsUploadOptionComponent] =
-    useState<boolean>(false);
-  // const { socket } = useSocket();
+  const [isUploadOptionComponent, setIsUploadOptionComponent] = useState(false);
+  const [isSearchActive, setIsSearchActive] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  
+  const searchRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const user = useSelector((state: RootState) => state.UserReducer.user);
+  const username = user?.username;
 
-  // fetch the local user
-  const username = useSelector(
-    (state: RootState) => state.UserReducer.user?.username
-  );
-
-  // for searching 
+  // Debounced search function
   const debouncedSearch = debounce(async (query: string) => {
     if (query.trim()) {
       try {
         setIsLoading(true);
-
         const response = await searchUsersApi(query);
         setSearchResults(response.data);
+        setShowSearchResults(true);
       } catch (err) {
         console.log(err);
-        toast.error("something went wrong");
+        toast.error("Something went wrong");
+        setSearchResults([]);
       } finally {
         setIsLoading(false);
       }
     } else {
       setSearchResults([]);
+      setShowSearchResults(false);
     }
   }, 500);
 
@@ -76,290 +72,362 @@ const NavBar: React.FC<Props> = ({ onNewPost }) => {
     return () => debouncedSearch.cancel();
   }, [searchText]);
 
+  // Handle click outside to close search results
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSearchResults(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Fetch notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await getUserNotificationApi();
+        setNotifications(response.data);
+      } catch (err) {
+        console.log("Error in fetch notification", err);
+      }
+    };
+    fetchNotifications();
+  }, []);
+
+  // Update unread count
+  useEffect(() => {
+    const unReadedNotifications = notifications.filter(
+      (notification: INotification) => !notification.isRead
+    );
+    setUnreadCount(unReadedNotifications.length);
+  }, [notifications]);
+
   const handleOnClose = () => {
     setSearchResults([]);
     setSearchText("");
+    setIsSearchActive(false);
+    setShowSearchResults(false);
   };
 
-
-   // fetch notification
- useEffect(() => {
-  const fetchNotifications = async () => {
-    setIsLoading(true)
-    try{
-      const response = await getUserNotificationApi();
-      console.log("user notification getting in navbar...............................",response.data)
-      setNotifications(response.data);
-    }catch(err){
-      console.log("error in fetch notification",err)
-    }finally{
-      setIsLoading(false)
+  const handleSearchFocus = () => {
+    if (searchText.trim()) {
+      setShowSearchResults(true);
     }
   };
-  fetchNotifications();
-}, []);
 
-// unreaded notification cout setting
-useEffect(()=>{
-const unReadedNotifications = notifications.filter((notification:INotification)=> notification.isRead ==false)
-setUnreadCount(unReadedNotifications.length)
-},[notifications])
-
-// socket notifcation listning
-useEffect(()=>{
-//  socket?.on("receiveNotification",(newNotifications:INotification) =>{
-//   console.log('notification recevied',newNotifications)
-//   console.log('notification',notifications)
-//   setNotifications((prev)=>{
-//     // const isDuplicate = prev.some((notification)=>
-//     // notification.entityId == newNotifications.entityId &&
-//     // notification.initiatorId == newNotifications.initiatorId &&
-//     // notification.type == newNotifications.type 
-//     // )
-//     // if(isDuplicate){
-//     //   console.log('duplicate was occured')
-//     //   return prev
-//     // }
-//     return [newNotifications,...prev]
-//   })
-  
-//  })
-
- // remove the notificatoin 
-// socket?.on("receiveRemoveNotification",(removeNotification:INotification)=>{
-//   console.log('recevied remove notification',removeNotification)
-//   console.log('current notifcation',notifications)
-//   setNotifications((prev) =>
-//     prev.filter(
-//       (notification) =>
-//         !(
-//           notification.entityId === removeNotification.entityId &&
-//           notification.initiatorId === removeNotification.initiatorId &&
-//           notification.type === removeNotification.type
-//         )
-//     )
-//   );
-// })
-
- return ()=>{
-  // socket?.off("receiveNotification")
-  // socket?.off("receiveRemoveNotification")
- }
-// },[socket])
-},[])
-
-
-// set setNotificationReaded
- const setNotificationReaded = ()=>{
-
-  setNotifications((prevNotifications) =>
-    prevNotifications.map((notification) => ({
-      ...notification,
-      isRead: true,
-    }))
-  );
-  setUnreadCount(0);
- }
+  const setNotificationReaded = () => {
+    setNotifications((prevNotifications) =>
+      prevNotifications.map((notification) => ({
+        ...notification,
+        isRead: true,
+      }))
+    );
+    setUnreadCount(0);
+  };
 
   return (
     <>
-      <nav className="flex flex-row items-center justify-between w-screen dark:bg-background-dark lg:px-16 ">
-        <div className="z-10 flex flex-row items-center justify-between w-full gap-3 p-3 lg:justify-start ">
-          <div>
-            <span className="text-2xl font-bold text-black cursor-pointer font-outfit dark:text-text-white">
-              Greo
-            </span>
-          </div>
+      {/* Desktop Navigation */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
+        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <div className="flex items-center">
+              <button
+                onClick={() => navigate("/")}
+                className="text-2xl font-bold text-black dark:text-white font-outfit hover:opacity-80 transition-opacity"
+              >
+                Greo
+              </button>
+            </div>
 
-          <div className="flex flex-row items-center justify-center space-x-2 ">
-            <div className="flex flex-row items-center justify-center p-2 rounded-full bg-background-dark dark:bg-background-light ">
-              <FiSearch className="text-2xl cursor-pointer text-text-Grayish" />
-              <input
-                type="text"
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                className="bg-background-dark dark:bg-background-light text-text-white dark:text-text-black focus:outline-none focus:ring-0 "
-                placeholder="Search"
-              />
-              {searchText.trim() && (
-                <FaXmark
-                  onClick={() => setSearchText("")}
-                  className="text-sm cursor-pointer text-text-Grayish"
+            {/* Search Bar - Desktop */}
+            <div className="hidden md:flex flex-1 max-w-xl mx-8" ref={searchRef}>
+              <div className="relative w-full">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaSearch className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  onFocus={handleSearchFocus}
+                  className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-700 rounded-full bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Search"
                 />
-              )}
+                {searchText.trim() && (
+                  <button
+                    onClick={() => {
+                      setSearchText("");
+                      setShowSearchResults(false);
+                    }}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  >
+                    <FaTimes className="h-4 w-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                  </button>
+                )}
+
+                {/* Search Results Dropdown */}
+                {showSearchResults && searchText && (
+                  <div className="absolute top-full left-0 right-0 mt-2 z-50">
+                    <SearchedUsersList
+                      users={searchResults}
+                      onClose={handleOnClose}
+                      isLoading={isLoading}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* <div className="flex flex-row items-center justify-center p-2 rounded-full shadow">
-            <UserRoundSearch
-             onClick={() =>navigate('/profiles')}
-                  className="text-sm cursor-pointer text-text-Grayish"
-            />
-           </div> */}
-          </div>
-        </div>
-        <div className="flex lg:space-x-6 md:space-x-5">
-          <div className="z-10 hidden lg:flex lg:space-x-6 md:space-x-5">
-            <div className="">
+            {/* Desktop Navigation Links */}
+            <div className="hidden md:flex items-center space-x-8">
               <NavLink
-                className={({ isActive }) =>
-                  `cursor-pointer font-golos p-2 px-4 rounded-full text-text-Grayish  ${
-                    isActive && "bg-black dark:bg-white"
-                  }`
-                }
                 to="/"
-              >
-                Home
-              </NavLink>
-            </div>
-
-            <div>
-              <NavLink
                 className={({ isActive }) =>
-                  ` cursor-pointer font-golos p-2 px-4 rounded-full text-text-Grayish  ${
-                    isActive && "bg-black  dark:bg-white"
+                  `p-2 rounded-lg transition-colors ${
+                    isActive
+                      ? "text-blue-600 dark:text-blue-400"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                   }`
                 }
-                to="/chat"
               >
-                Chat
+                <GoHomeFill className="w-6 h-6" />
               </NavLink>
-            </div>
 
-            <div>
               <NavLink
-                className={({ isActive }) =>
-                  ` cursor-pointer font-golos p-2 px-4 rounded-full text-text-Grayish ${
-                    isActive && "bg-black   dark:bg-white"
-                  }`
-                }
-                to="/roll"
-              >
-                Roll
-              </NavLink>
-            </div>
-
-            <div>
-              <NavLink
-                className={({ isActive }) =>
-                  ` cursor-pointer font-golos p-2 px-4 rounded-full text-text-Grayish ${
-                    isActive && "bg-black   dark:bg-white"
-                  }`
-                }
                 to="/explore"
-              >
-                Explore
-              </NavLink>
-            </div>
-
-            <div>
-              <NavLink
                 className={({ isActive }) =>
-                  ` cursor-pointer font-golos p-2 px-4 rounded-full text-text-Grayish ${
-                    isActive && "bg-black  dark:bg-white"
+                  `p-2 rounded-lg transition-colors ${
+                    isActive
+                      ? "text-blue-600 dark:text-blue-400"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                   }`
                 }
-                to={`profile/${username}`}
               >
-                Profile
+                <MdExplore className="w-6 h-6" />
+              </NavLink>
+
+              <NavLink
+                to="/roll"
+                className={({ isActive }) =>
+                  `p-2 rounded-lg transition-colors ${
+                    isActive
+                      ? "text-blue-600 dark:text-blue-400"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  }`
+                }
+              >
+                <PiPlayCircleBold className="w-6 h-6" />
+              </NavLink>
+
+              <button
+                onClick={() => setIsUploadOptionComponent(true)}
+                className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              >
+                <PiPlusSquareBold className="w-6 h-6" />
+              </button>
+
+              <NavLink
+                to="/chat"
+                className={({ isActive }) =>
+                  `p-2 rounded-lg transition-colors ${
+                    isActive
+                      ? "text-blue-600 dark:text-blue-400"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  }`
+                }
+              >
+                <HiChatBubbleOvalLeft className="w-6 h-6" />
+              </NavLink>
+
+              {/* Notifications */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                  className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                >
+                  <IoMdNotifications className="w-6 h-6" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              {/* Profile */}
+              <NavLink
+                to={`/profile/${username}`}
+                className={({ isActive }) =>
+                  `p-2 rounded-lg transition-colors ${
+                    isActive
+                      ? "text-blue-600 dark:text-blue-400"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  }`
+                }
+              >
+                <FaUser className="w-6 h-6" />
               </NavLink>
             </div>
 
-            <div
-              onClick={() => setIsUploadOptionComponent(true)}
-              className="px-4 rounded-full cursor-pointer p font-golos text-text-Grayish "
-            >
-              upload
+            {/* Mobile Search Button */}
+            <div className="md:hidden">
+              <button
+                onClick={() => setIsSearchActive(true)}
+                className="p-2 text-gray-600 dark:text-gray-400"
+              >
+                <FaSearch className="w-5 h-5" />
+              </button>
             </div>
           </div>
-          <div className="relative flex items-center justify-center" onClick={() => setIsNotificationOpen(!isNotificationOpen)}>
-
-            <IoMdNotifications className="text-2xl cursor-pointer dark:text-text-Grayish hover:text-text-Grayish dark:hover:text-text-white " />
-          {unreadCount > 0 && (
-        <div
-        className="absolute top-0 right-0 flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-red-600 rounded-full lg:top-0 lg:left-5 sm:w-5 sm:h-5 sm:text-sm">
-     {unreadCount}
-    </div>
-  )}
-            
-          </div>
         </div>
 
-        {/* mobile navbar */}
-
-        <div className="fixed bottom-0 flex flex-row items-center justify-between w-full p-3 lg:hidden bg-background-light dark:bg-background-dark sm:px-10 ">
-          <div>
-            <NavLink to="/">
-              {({ isActive }) =>
-                isActive ? (
-                  <GoHomeFill className="text-3xl dark:text-text-white" />
-                ) : (
-                  <GoHome className="text-3xl dark:text-text-Grayish" />
-                )
-              }
-            </NavLink>
+        {/* Mobile Search Overlay */}
+        {isSearchActive && (
+          <div className="fixed inset-0 z-50 bg-white dark:bg-gray-900 md:hidden">
+            <div className="flex items-center p-4 border-b border-gray-200 dark:border-gray-800">
+              <div className="relative flex-1">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaSearch className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  className="block w-full pl-10 pr-10 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Search"
+                  autoFocus
+                />
+                <button
+                  onClick={handleOnClose}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                >
+                  <FaTimes className="h-5 w-5 text-gray-400" />
+                </button>
+              </div>
+            </div>
+            {searchResults.length > 0 && (
+              <div className="p-4">
+                <SearchedUsersList users={searchResults} onClose={handleOnClose} isLoading={isLoading} />
+              </div>
+            )}
           </div>
-
-          <div>
-            <NavLink to={"/explore"}>
-              {({ isActive }) =>
-                isActive ? (
-                  <MdExplore className="text-3xl dark:text-text-white" />
-                ) : (
-                  <MdOutlineExplore className="text-3xl dark:text-text-Grayish" />
-                )
-              }
-            </NavLink>
-          </div>
-
-          <div>
-            <NavLink to={"/roll"}>
-              {({ isActive }) =>
-                isActive ? (
-                  <PiPlayCircleBold className="text-3xl dark:text-text-white" />
-                ) : (
-                  <PiPlayCircle className="text-3xl dark:text-text-Grayish" />
-                )
-              }
-            </NavLink>
-          </div>
-
-          <div>
-            <PiPlusSquareBold
-              onClick={() => setIsUploadOptionComponent(true)}
-              className="text-3xl dark:text-text-Grayish"
-            />
-          </div>
-
-          <div>
-            <NavLink to={"/chat"}>
-              {({ isActive }) =>
-                isActive ? (
-                  <HiChatBubbleOvalLeft className="text-3xl dark:text-text-white" />
-                ) : (
-                  <HiOutlineChatBubbleOvalLeft className="text-3xl dark:text-text-Grayish" />
-                )
-              }
-            </NavLink>
-          </div>
-
-          <div>
-            <NavLink to={`/profile/${username}`}>
-              {({ isActive }) =>
-                isActive ? (
-                  <FaUser className="text-3xl dark:text-text-white" />
-                ) : (
-                  <FaRegUser className="text-3xl dark:text-text-Grayish" />
-                )
-              }
-            </NavLink>
-          </div>
-        </div>
-        {searchText && (
-          <SearchedUsersList users={searchResults} onClose={handleOnClose} />
         )}
       </nav>
 
-      {isUploadOptionComponent && (
+      {/* Mobile Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 md:hidden">
+        <div className="flex items-center justify-around h-16 px-4">
+          <NavLink
+            to="/"
+            className={({ isActive }) =>
+              `p-2 flex flex-col items-center ${
+                isActive
+                  ? "text-blue-600 dark:text-blue-400"
+                  : "text-gray-600 dark:text-gray-400"
+              }`
+            }
+          >
+            {({ isActive }) =>
+              isActive ? (
+                <GoHomeFill className="w-6 h-6" />
+              ) : (
+                <GoHome className="w-6 h-6" />
+              )
+            }
+          </NavLink>
+
+          <NavLink
+            to="/explore"
+            className={({ isActive }) =>
+              `p-2 flex flex-col items-center ${
+                isActive
+                  ? "text-blue-600 dark:text-blue-400"
+                  : "text-gray-600 dark:text-gray-400"
+              }`
+            }
+          >
+            {({ isActive }) =>
+              isActive ? (
+                <MdExplore className="w-6 h-6" />
+              ) : (
+                <MdOutlineExplore className="w-6 h-6" />
+              )
+            }
+          </NavLink>
+
+          <NavLink
+            to="/roll"
+            className={({ isActive }) =>
+              `p-2 flex flex-col items-center ${
+                isActive
+                  ? "text-blue-600 dark:text-blue-400"
+                  : "text-gray-600 dark:text-gray-400"
+              }`
+            }
+          >
+            {({ isActive }) =>
+              isActive ? (
+                <PiPlayCircleBold className="w-6 h-6" />
+              ) : (
+                <PiPlayCircle className="w-6 h-6" />
+              )
+            }
+          </NavLink>
+
+          <button
+            onClick={() => setIsUploadOptionComponent(true)}
+            className="p-2 text-gray-600 dark:text-gray-400"
+          >
+            <PiPlusSquareBold className="w-6 h-6" />
+          </button>
+
+          <NavLink
+            to="/chat"
+            className={({ isActive }) =>
+              `p-2 flex flex-col items-center ${
+                isActive
+                  ? "text-blue-600 dark:text-blue-400"
+                  : "text-gray-600 dark:text-gray-400"
+              }`
+            }
+          >
+            {({ isActive }) =>
+              isActive ? (
+                <HiChatBubbleOvalLeft className="w-6 h-6" />
+              ) : (
+                <HiOutlineChatBubbleOvalLeft className="w-6 h-6" />
+              )
+            }
+          </NavLink>
+
+          <NavLink
+            to={`/profile/${username}`}
+            className={({ isActive }) =>
+              `p-2 flex flex-col items-center ${
+                isActive
+                  ? "text-blue-600 dark:text-blue-400"
+                  : "text-gray-600 dark:text-gray-400"
+              }`
+            }
+          >
+            {({ isActive }) =>
+              isActive ? (
+                <FaUser className="w-6 h-6" />
+              ) : (
+                <FaRegUser className="w-6 h-6" />
+              )
+            }
+          </NavLink>
+        </div>
+      </div>
+
+      {/* Modals */}
+      {/* {isUploadOptionComponent && (
         <UploadOption
           userId={user?.id || ""}
           onClose={() => setIsUploadOptionComponent(false)}
@@ -367,15 +435,15 @@ useEffect(()=>{
           refreshPosts={false}
           onNewPost={onNewPost}
         />
-      )}
+      )} */}
 
       {isNotificationOpen && (
         <Notification
           notifications={notifications}
           isLoading={isLoading}
-          onClose={() => setIsNotificationOpen(!isNotificationOpen)}
+          onClose={() => setIsNotificationOpen(false)}
           setNotificationReaded={setNotificationReaded}
-          setNotification={()=>setNotification}
+          setNotification={setNotifications}
         />
       )}
     </>

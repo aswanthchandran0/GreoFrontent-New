@@ -11,7 +11,6 @@ import UserAuth from "./pages/UserAuth";
 import Signin from "./components/userComponents/Authenticate/Signin";
 import Signup from "./components/userComponents/Authenticate/Signup";
 import ProfileScreen from "./pages/ProfileScreen";
-import RollScreen from "./pages/RollScreen";
 import ChatScreen from "./pages/ChatScreen";
 import OtpVerification from "./components/userComponents/Authenticate/OtpVerification";
 import ProtectedRoute from "./components/userComponents/RouteProtect/ProtectedRoute";
@@ -21,16 +20,11 @@ import ForgotPassword from "./components/userComponents/Authenticate/ForgotPassw
 import ResetPassword from "./components/userComponents/Authenticate/ResetPassword";
 import EditProfile from "./components/userComponents/profile/EditProfile";
 import AdminAuth from "./pages/admin/AdminAuth";
-import AdminPannelScreen from "./pages/admin/AdminPannelScreen";
 import Auth from "./components/adminComponents/auth/Auth";
 import AdminSignOutAuth from "./components/userComponents/RouteProtect/admin/adminSignOutAuthProtector";
-import Users from "./components/adminComponents/userManagement/Users";
 import Chat from "./components/userComponents/Chat/Chat";
-// import {VideoCall} from "./components/userComponents/VideoCall/VideoCall"; // 🔥 REMOVE OLD IMPORT
-import Posts from "./components/adminComponents/postManagement/Posts";
 import ExploreScreen from "./pages/ExploreScreen";
 import ShareScreen from "./pages/ShareScreen";
-import Dashboard from "./components/adminComponents/Dashboard/Dashboard";
 import ProfilesScreen from "./pages/ProfilesScreen";
 import LandingPage from "./pages/LandingPage";
 import { useSelector } from "react-redux";
@@ -39,6 +33,14 @@ import { tokenService } from "./services/user/tokenService";
 import { SocketProvider } from "./context/SocketContext";
 import { CallProvider } from "./context/CallContext";
 import CallManager from "./components/userComponents/call/CallManager";
+import ReelScreen from "./pages/ReelScreen";
+
+// NEW ADMIN PANEL IMPORTS
+import AdminLayout from "./pages/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminContent from "./pages/admin/AdminContent";
+
 
 const router = createBrowserRouter([
   {
@@ -101,21 +103,12 @@ const router = createBrowserRouter([
         path: "roll",
         element: (
           <div className="fixed inset-0 bg-black">
-            <RollScreen />
+            <ReelScreen />
           </div>
         ),
       },
     ],
   },
-  // 🔥 REMOVE THE /call/:userId ROUTE - Calls are now handled via modals
-  // {
-  //   path:"/call/:userId",
-  //   element:(
-  //     <ProtectedRoute>
-  //       <VideoCall/>
-  //     </ProtectedRoute>
-  //   )
-  // },
   {
     path: "/auth",
     element: <AuthRoute />,
@@ -155,6 +148,7 @@ const router = createBrowserRouter([
       },
     ],
   },
+  // Admin Auth Route (Login)
   {
     path:'/admin/auth',
     element:<AdminSignOutAuth/>,
@@ -170,28 +164,52 @@ const router = createBrowserRouter([
       }
     ]
   },
+  // NEW ADMIN PANEL ROUTES (Replacing the old admin panel)
   {
-    path:'/admin',
-    element:<AdminPannelScreen/>,
-    children:[
+    path: '/admin',
+    element: <AdminLayout />,
+    children: [
       {
-        path: '', // Default route for /admin
-        element: <Dashboard />,
+        index: true,
+        element: <Navigate to="dashboard" replace />,
       },
       {
-        path:"users",
-        element:<Users/>,
+        path: "dashboard",
+        element: <AdminDashboard />,
       },
       {
-        path:"posts",
-        element:<Posts/>
+        path: "users",
+        element: <AdminUsers />,
       },
-    ]
+      {
+        path: "content",
+        element: <AdminContent />,
+      },
+      {
+        path: "reports",
+        // element: <AdminReports />,
+      },
+      {
+        path: "activity",
+        // element: <AdminActivityLog />,
+      },
+      {
+        path: "settings",
+        // element: <AdminSettings />,
+      },
+      {
+        path: "announce",
+        // element: <AdminAnnounce />,
+      },
+      {
+        path: "profile",
+        // element: <AdminProfile />,
+      },
+    ],
   },
   {
     path:"demo",
-    // element:<VideoCall/> // 🔥 Remove or keep for demo
-    element: <Navigate to="/" /> // Redirect since calls are modal-based
+    element: <Navigate to="/" />
   }
 ]);
 
@@ -205,7 +223,7 @@ const App = () => {
         <CallProvider>
           <Toaster position="top-right" />
           <RouterProvider router={router} />
-          <CallManager /> {/* This renders all call modals/screens */}
+          <CallManager />
         </CallProvider>
       </SocketProvider>
     );

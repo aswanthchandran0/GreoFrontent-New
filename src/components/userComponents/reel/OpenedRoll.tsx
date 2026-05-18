@@ -12,16 +12,17 @@ import { RootState } from "../../../redux/store";
 import { DEFAULT_PROFILE_IMAGE } from "../../../assets/images";
 import { HiSpeakerWave } from "react-icons/hi2";
 import { HiSpeakerXMark } from "react-icons/hi2";
-import { IRoll } from "../profile/UserPosts";
 import Comment from "../post/Comment";
-import RollMenu from "./RollMenu";
+
 import { ExploreI } from "../../../Types/exploreTypes";
 import toast from "react-hot-toast";
+import { IReel } from "../../../Types/reelTypes";
+import ReelMenu from "./ReelMenu";
  
 
 interface OpenedRollProps {
   // tactical in roll type
-  roll: IRoll | ExploreI;
+  reel: IReel
 //   isLiked: boolean;
   // onLikeToggle: () => void;
   onClose: () => void;
@@ -31,24 +32,25 @@ interface OpenedRollProps {
 // staring
 
 
-const OpenedRoll: React.FC<OpenedRollProps> = ({roll,onClose}) =>  
+const OpenedRoll: React.FC<OpenedRollProps> = ({reel,onClose}) =>  
   {
-  console.log('roll in open post',roll)
+  console.log('roll in open post',reel)
    const [comment,setComment] = useState<string>('')
    const [comments, setComments] = useState<IComment[]>([]);
   const loggedUser = useSelector((state: RootState) => state.UserReducer.user);
-   const [commentsCount,setCommentsCount] = useState(roll.commentCount || 0)
+   const [commentsCount,setCommentsCount] = useState(reel.commentCount || 0)
    const [isPlaying, setIsPlaying] = useState<boolean>(false);
    const [isAudioOn,setIsAudioOn] = useState<boolean>(true)
    const [isRollMenu, setIsRollMenu] = useState<boolean>(false);
-     const [localIsLiked, setLocalIsLiked] = useState<boolean>(roll.isLiked || false);
-     const [likeCount, setLikeCount] = useState<number>(roll.likeCount || 0);
+     const [localIsLiked, setLocalIsLiked] = useState<boolean>(reel.isLiked || false);
+     const [likeCount, setLikeCount] = useState<number>(reel.likeCount || 0);
 const [loading, setLoading] = useState<boolean>(false);
 
+const isOwner = loggedUser?.id === reel.userId;
   useEffect(()=>{
     try{
      const fetchComments = async()=>{
-       const response = await getCommentsApi(roll.id ?? "","reel")
+       const response = await getCommentsApi(reel.id ?? "","reel")
        const commentsArray: IComment[] = Array.isArray(response.data)
         ? response.data
         : [response.data];
@@ -63,7 +65,7 @@ const [loading, setLoading] = useState<boolean>(false);
     }
   },[])
 
-  console.log('role in opend file',roll)
+  console.log('role in opend file',reel)
 
    
   const handleAddComment = (newComment: IComment) => {
@@ -72,7 +74,7 @@ const [loading, setLoading] = useState<boolean>(false);
    // comment sent 
    const handleCommentPost= async()=>{
     try{
-     const response =  await postCommentApi(roll?.id ?? '','reel',comment)
+     const response =  await postCommentApi(reel?.id ?? '','reel',comment)
     response.data.profileImage = loggedUser?.profileImage
         response.data.username = loggedUser?.username
 
@@ -92,8 +94,8 @@ const [loading, setLoading] = useState<boolean>(false);
    // profile navigation
     const handleProfileNavigation = ()=>{
     // TACTICAL: Handle fallback for userName based on possible variations in API data
-      if("username" in roll && roll.username && roll.username !== loggedUserName){
-        navigate(`/profile/${roll.username}`)
+      if("username" in reel && reel.username && reel.username !== loggedUserName){
+        navigate(`/profile/${reel.username}`)
       }
     }
 
@@ -116,7 +118,7 @@ const onLikeToggle = async () => {
   setLoading(true);
 
   try {
-    const response = await toggleLikeApi(roll.id ?? "", "reel"); // "reel" type
+    const response = await toggleLikeApi(reel.id ?? "", "reel"); // "reel" type
     const { liked, totalLikes } = response.data;
 
     // Update local state
@@ -132,6 +134,23 @@ console.error("Failed to toggle like:", err);
 };
 
       
+
+ const handleDeleteReel = async () => {
+    try {
+      // Call delete API here
+      // await deleteReelApi(roll.id);
+      toast.success('Reel deleted successfully');
+      onClose();
+    } catch (error) {
+      toast.error('Failed to delete reel');
+      console.error('Error deleting reel:', error);
+    }
+  };
+
+  const handleEditReel = () => {
+    // Navigate to edit page or open edit modal
+    toast.success('Edit feature coming soon!');
+  };
   
 
   
@@ -149,7 +168,7 @@ console.error("Failed to toggle like:", err);
         <div  onClick={handlePlayPause}>
         <video
               id="rollVideo"
-              src={'mediaUrl' in roll ? roll.mediaUrl : ''}
+              src={'mediaUrl' in reel ? reel.mediaUrl : ''}
               className="object-contain w-full h-full rounded-md"
               autoPlay
               loop
@@ -171,10 +190,10 @@ console.error("Failed to toggle like:", err);
         {/* header */}
         <div className="flex flex-row items-center w-full gap-2 p-2 border-b border-text-charcoal">
           <div className="w-12 h-12 overflow-hidden rounded-full">
-            <img  className="object-cover w-full h-full cursor-pointer" src={roll.profileImage || DEFAULT_PROFILE_IMAGE} alt="" />
+            <img  className="object-cover w-full h-full cursor-pointer" src={reel.profileImage || DEFAULT_PROFILE_IMAGE} alt="" />
           </div>
           <span onClick={handleProfileNavigation} className="font-bold cursor-pointer text-text-black font-golos dark:text-text-white">
-          {('username' in roll ? roll.username : 'Unknown User')}
+          {('username' in reel ? reel.username : 'Unknown User')}
           </span>
           <div className="flex flex-row ml-auto space-x-3 text-xl font-semibold cursor-pointer text-text-black dark:text-text-white">
             {/* {loggedUser?.user_name === username && (
@@ -255,9 +274,15 @@ console.error("Failed to toggle like:", err);
       </div>
       {/* comment side end */}
     </div>
-    {
-      isRollMenu && <RollMenu onClose={()=>setIsRollMenu(false)} />
-    }
+   {isRollMenu && (
+          <ReelMenu
+            reel={reel}
+            isOwner={isOwner}
+            onClose={() => setIsRollMenu(false)}
+            onDelete={handleDeleteReel}
+            onEdit={handleEditReel}
+          />
+        )}
   </div>
 );
 

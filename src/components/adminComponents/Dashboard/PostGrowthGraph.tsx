@@ -18,7 +18,7 @@ interface IPost {
   updatedAt?: Date;
 }
 
-interface IRoll {
+export interface IRoll {
   id: string;
   userId: string;
   mediaUrl: string;

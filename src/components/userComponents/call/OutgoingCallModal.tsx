@@ -7,6 +7,7 @@ import {
   FaVideo
 } from 'react-icons/fa';
 import { useCall } from '../../../context/CallContext';
+import toast from 'react-hot-toast';
 
 const OutgoingCallModal: React.FC = () => {
    const { 
@@ -26,6 +27,10 @@ const OutgoingCallModal: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(()=>{
+ console.log('Outgoing call modal mounted',callerInfo);
+ toast('Calling '+callerInfo?.name)
+  },[])
    // Auto-start WebRTC when call is answered
   useEffect(() => {
     if (isCallActive) {

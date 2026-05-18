@@ -1,298 +1,588 @@
-import React, { useEffect, useState } from "react"
-import { FaRegHeart } from "react-icons/fa";
-import { FaHeart } from "react-icons/fa";
-import { FaRegComment } from "react-icons/fa";
-import { IoIosShareAlt } from "react-icons/io";
-import { IoBookmarkOutline } from "react-icons/io5";
-import { IoBookmark } from "react-icons/io5";
-import { IPost } from "../../../Types/postTypes";
-import Comments from "./Comments";
-import { useNavigate } from "react-router-dom";
-import { timeformat } from "../../../utils/formating";
-import { BsThreeDots } from "react-icons/bs";
-import PostMenu from "./PostMenu";
-import LikedUsers from "./LikedUsers";
-import SharingOption from "./SharingOption";
-import { deleteNotification, deleteSavedItemApi, saveItemApi, saveNotification, toggleLikeApi } from "../../../services/user/api";
-import toast from "react-hot-toast";
-import { SavedItemArrayElement } from "../../../Types/savedItemTypes";
-// import { useSocket } from "../../../context/SocketContext";
-import { useSelector } from "react-redux";
-import { RootState } from "../../../redux/store";
+// src/components/post/PostCard.tsx
 
-const defaultProfileImage = 'https://img.freepik.com/free-vector/businessman-character-avatar-isolated_24877-60111.jpg?t=st=1729611509~exp=1729615109~hmac=f56084f44329d588f81849bc897a8533f197f38f12e1fd5d08aca16c67adffb4&w=740'
+import React, { useState, useEffect, useRef } from 'react';
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { 
+  FaHeart, 
+  FaRegHeart, 
+  FaComment, 
+  FaRegComment, 
+  FaBookmark, 
+  FaRegBookmark,
+  FaShare,
+  FaEllipsisH,
+  FaPlay,
+  FaPause,
+  FaVolumeMute,
+  FaVolumeUp,
+  FaExpand,
+  FaCompress
+} from 'react-icons/fa';
+import { BsThreeDots } from 'react-icons/bs';
+import { BiSolidLike } from 'react-icons/bi';
+import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
+import moment from 'moment';
+
+// Components
+import PostCommentsModal from './PostCommentsModal';
+import PostMenu from './PostMenu';
+import UserAvatar from '../../ui/UserAvatar';
+
+// Services
+import { 
+  toggleLikeApi, 
+  toggleSaveApi,
+  saveItemApi,
+  unsaveItemApi,
+  getSavedItemApi
+} from '../../../services/user/api';
+
+// Types
+import { IPost } from '../../../Types/postTypes';
+import { RootState } from '../../../redux/store';
+import SharingOption from './SharingOption';
 
 interface PostCardProps {
   post: IPost;
-  isLiked: boolean;
-  id?: string;
-  setPosts: React.Dispatch<React.SetStateAction<IPost[]>>;
+  onDelete?: (postId: string) => void;
+  onUpdate?: (postId: string, content: string) => void;
+  onLikeChange?: (postId: string, isLiked: boolean, likeCount: number) => void;
+  onSaveChange?: (postId: string, isSaved: boolean) => void;
+  compact?: boolean;
+  isLiked?: boolean;
+  setPosts?: React.Dispatch<React.SetStateAction<IPost[]>>;
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post, isLiked, id, setPosts }) => {
-  const [isCommentBoxOpen, setIsCommentBoxOpen] = useState(false);
-  const [isPostMenu, setIsPostMenu] = useState<boolean>(false);
-  const [isSharing, setIsSharing] = useState<boolean>(false);
-  const [localIsLiked, setLocalIsLiked] = useState<boolean>(isLiked);
-  const [likedUsersListOpen, setLikedUsersListOpen] = useState(false);
-  const [loading, setLoading] = useState<boolean>(false);
+const PostCard: React.FC<PostCardProps> = ({
+  post,
+  onDelete,
+  onUpdate,
+  onLikeChange,
+  onSaveChange,
+  compact = false,
+  isLiked: propIsLiked,
+  setPosts
+}) => {
+  const [isLiked, setIsLiked] = useState(propIsLiked !== undefined ? propIsLiked : (post.isLiked || false));
+  const [isSaved, setIsSaved] = useState(post.isSaved || false);
+  const [likeCount, setLikeCount] = useState(post.likeCount || 0);
+  const [commentCount, setCommentCount] = useState(post.commentCount || 0);
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [aspectRatio, setAspectRatio] = useState<string>('square');
+  const [isHovered, setIsHovered] = useState(false);
+  const [showCaption, setShowCaption] = useState(false);
+  const [isSharingOpen, setIsSharingOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const mediaContainerRef = useRef<HTMLDivElement>(null);
+  
   const navigate = useNavigate();
-  // const {socket} = useSocket()
-  const myId = useSelector((state: RootState) => state.UserReducer.user?.id);
+  const loggedInUser = useSelector((state: RootState) => state.UserReducer.user);
+  const isOwner = loggedInUser?.id === post.userId;
 
-  // handle comment box open or close
-  const handleCommentBox = () => {
-    setIsCommentBoxOpen(!isCommentBoxOpen);
-  };
+  // Update states when post prop changes
+  useEffect(() => {
+    setIsLiked(post.isLiked || false);
+    setIsSaved(post.isSaved || false);
+    setLikeCount(post.likeCount || 0);
+    setCommentCount(post.commentCount || 0);
+  }, [post]);
 
-  // navigate to profile
-  const handleProfileNavigation = () => {
-    navigate(`profile/${post.username}`);
-  };
-
-  // handling the commentCount 
-  const handlingCommentCount = (commentCount: number) => {
-    post.commentCount = commentCount;
-  };
-
-  // handle Post Saving
-  const handlePostSaving = async (item: SavedItemArrayElement) => {
+  // Handle like
+  const handleLike = async () => {
     try {
-      const response = await saveItemApi(item);
-      if (response.data == null) {
-        toast("already saved");
-      } else {
-        setPosts((prevPosts) =>
-          prevPosts.map((post) =>
-            post.id === item.itemId
-              ? { ...post, isSaved: true }
-              : post
-          )
-        );
-        toast.success('saved');
+      const response = await toggleLikeApi(post.id, 'post');
+      const newIsLiked = response.data.liked;
+      const newLikeCount = response.data.totalLikes;
+      
+      setIsLiked(newIsLiked);
+      setLikeCount(newLikeCount);
+      
+      if (onLikeChange) {
+        onLikeChange(post.id, newIsLiked, newLikeCount);
       }
-    } catch (err) {
-      console.log('error', err);
-      toast.error("something went wrong in saving post");
-    }
-  };
-
-  // unSave post 
-  const handleUnsavePost = async (itemId: string) => {
-    try {
-      const response = await deleteSavedItemApi(itemId, "POST");
-      if (response.status === 200) {
-        setPosts((prevPosts) =>
-          prevPosts.map((post) =>
-            post.id === itemId
-              ? { ...post, isSaved: false }
-              : post
+      
+      if (setPosts) {
+        setPosts(prevPosts =>
+          prevPosts.map(p =>
+            p.id === post.id ? { ...p, isLiked: newIsLiked, likeCount: newLikeCount } : p
           )
         );
-        toast.success("unsaved");
+      }
+      
+      if (newIsLiked) {
+        toast.success('Liked!', { icon: '❤️', duration: 1500 });
       }
     } catch (error) {
-      console.error("Failed to unsave post:", error);
-      toast.error("Failed to unsave post. Please try again.");
+      toast.error('Failed to update like');
+      console.error('Like error:', error);
     }
   };
 
-  const onLikeToggle = async () => {
-    if (loading) return;
-    setLoading(true);
-
-    try {
-      const response = await toggleLikeApi(post.id ?? "", "post");
-      const { liked, totalLikes } = response.data;
-
-      setLocalIsLiked(liked);
-
-      // Update post list with new like info
-      setPosts((prevPosts) =>
-        prevPosts.map((p) =>
-          p.id === post.id
-            ? { ...p, isLiked: liked, likeCount: totalLikes }
-            : p
+  // Handle save with optimistic update
+  const handleSave = async () => {
+    if (isSaving) return;
+    
+    setIsSaving(true);
+    
+    // Optimistic update - change UI immediately
+    const previousSavedState = isSaved;
+    setIsSaved(!isSaved);
+    
+    // Update parent state optimistically
+    if (onSaveChange) {
+      onSaveChange(post.id, !isSaved);
+    }
+    
+    if (setPosts) {
+      setPosts(prevPosts =>
+        prevPosts.map(p =>
+          p.id === post.id ? { ...p, isSaved: !isSaved } : p
         )
       );
-
-      // Optional: Notify the post owner
-      // if (liked && post.userId !== myId) {
-      //   socket?.emit("sendNotification", {
-      //     userId: post.userId,
-      //     initiatorId: myId,
-      //     entityId: post.id,
-      //     type: "post",
-      //     message: "liked your post",
-      //   });
-      // } else if (!liked) {
-      //   socket?.emit("removeNotification", {
-      //     userId: post.userId,
-      //     initiatorId: myId,
-      //     entityId: post.id,
-      //     type: "post",
-      //   });
-      // }
+    }
+    
+    try {
+      if (isSaved) {
+        // Unsave the item
+        await unsaveItemApi(post.id, 'POST');
+        toast.success('Removed from saved', { 
+          icon: '🗑️', 
+          duration: 2000 
+        });
+      } else {
+        // Save the item
+        await saveItemApi(post.id, 'POST');
+        toast.success('Saved to your collection', { 
+          icon: '🔖', 
+          duration: 2000 
+        });
+      }
     } catch (error) {
-      console.error("Error toggling like:", error);
-      toast.error("Failed to update like status");
+      // Revert on error
+      setIsSaved(previousSavedState);
+      
+      if (onSaveChange) {
+        onSaveChange(post.id, previousSavedState);
+      }
+      
+      if (setPosts) {
+        setPosts(prevPosts =>
+          prevPosts.map(p =>
+            p.id === post.id ? { ...p, isSaved: previousSavedState } : p
+          )
+        );
+      }
+      
+      toast.error('Failed to update save status');
+      console.error('Save error:', error);
     } finally {
-      setLoading(false);
+      setIsSaving(false);
     }
   };
 
-  // Handler to toggle modal
-  const handleLikedUsersListToggle = () => {
-    setLikedUsersListOpen(prev => !prev);
+  // Handle media navigation
+  const handleNextMedia = () => {
+    if (post.mediaUrls && currentMediaIndex < post.mediaUrls.length - 1) {
+      setCurrentMediaIndex(currentMediaIndex + 1);
+    }
   };
 
+  const handlePrevMedia = () => {
+    if (currentMediaIndex > 0) {
+      setCurrentMediaIndex(currentMediaIndex - 1);
+    }
+  };
+
+  // Handle video playback
+  const handleVideoPlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleVideoMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
+  // Handle fullscreen
+  const handleFullscreen = () => {
+    if (!mediaContainerRef.current) return;
+    
+    if (!document.fullscreenElement) {
+      mediaContainerRef.current.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  // Handle profile navigation
+  const handleProfileClick = () => {
+    navigate(`/profile/${post.username}`);
+  };
+
+  // Format numbers
+  const formatNumber = (num: number): string => {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + 'M';
+    }
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
+  };
+
+  // Format time
+  const formatTime = (date: string | Date): string => {
+    return moment(date).fromNow();
+  };
+
+  // Determine media type
+  const isVideo = (url: string): boolean => {
+    return url.includes('.mp4') || url.includes('.mov') || url.includes('.webm');
+  };
+
+  const currentMedia = post.mediaUrls?.[currentMediaIndex] || '';
+
+  // Calculate aspect ratio on image load
+  useEffect(() => {
+    if (currentMedia && !isVideo(currentMedia)) {
+      const img = new Image();
+      img.src = currentMedia;
+      img.onload = () => {
+        const ratio = img.width / img.height;
+        if (ratio > 1.2) setAspectRatio('landscape');
+        else if (ratio < 0.8) setAspectRatio('portrait');
+        else setAspectRatio('square');
+      };
+    }
+  }, [currentMedia]);
+
   return (
-    <>
-      <div id={id} className="flex flex-col max-w-5xl shadow-md bg-background-light dark:bg-background-dark lg:w-[28rem]">
-        <div className="flex h-full overflow-hidden">
-          <img className="object-cover w-full h-full" src={post.mediaUrls[0]} alt="post" />
-        </div>
-
-        <div className="flex flex-col p-2 space-y-3">
-          <div className="flex flex-col">
-            <div className="flex flex-row items-center space-x-2">
-              <div className="w-10 h-10 overflow-hidden rounded-full">
-                <img
-                  className="object-cover w-full h-full cursor-pointer"
-                  src={post?.profileImage ? post.profileImage : defaultProfileImage}
-                  alt=""
-                />
-              </div>
-              <div className="flex flex-row items-center w-11/12">
-                <span
-                  onClick={handleProfileNavigation}
-                  className="py-2 text-lg font-semibold cursor-pointer font-zilla dark:text-text-white text-text-charcoal"
-                >
-                  {post.name}
-                </span>
-                <BsThreeDots
-                  onClick={() => setIsPostMenu(true)}
-                  className="ml-auto cursor-pointer font-golos text-text-lavenderGray"
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-row">
-              <span className="font-golos text-text-lavenderGray">{post.username}</span>
-              <span className="ml-auto font-golos text-text-lavenderGray">{timeformat(post?.createdAt)}</span>
-            </div>
-          </div>
-
-          <div className="max-w-xl">
-            <span className="font-golos text-text-darkGray">{post.content}</span>
-          </div>
-
-          <div className="flex flex-row items-center justify-between">
-            <div className="flex flex-row items-center space-x-3">
-              <div className="flex flex-col items-center justify-center">
-                {localIsLiked ? (
-                  <FaHeart
-                    className={`text-2xl cursor-pointer text-red-500 ${loading ? 'animate-ping' : ''}`}
-                    onClick={!loading ? onLikeToggle : undefined}
-                  />
-                ) : (
-                  <FaRegHeart
-                    className={`text-2xl cursor-pointer dark:text-text-white text-text-charcoal ${loading ? 'animate-ping' : ''}`}
-                    onClick={!loading ? onLikeToggle : undefined}
-                  />
-                )}
-
-                {!loading && (
-                  <span
-                    onClick={handleLikedUsersListToggle}
-                    className="cursor-pointer font-golos dark:text-text-white text-text-charcoal"
-                  >
-                    {post.likeCount || 0}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex flex-col items-center justify-center">
-                <FaRegComment
-                  onClick={handleCommentBox}
-                  className="text-2xl cursor-pointer dark:text-text-white text-text-charcoal"
-                />
-                <span className="font-golos dark:text-text-white text-text-charcoal">
-                  {post.commentCount || 0}
-                </span>
-              </div>
-
-              <div className="flex flex-col items-center justify-center">
-                <IoIosShareAlt
-                  onClick={() => setIsSharing(true)} // ✅ Change to setIsSharing(true) to open modal
-                  className="text-2xl cursor-pointer dark:text-text-white text-text-charcoal"
-                />
-                <span className="font-golos dark:text-text-white text-text-charcoal">0</span>
-              </div>
-            </div>
-
-            <div className="flex flex-col">
-              {post.isSaved ? (
-                <IoBookmark
-                  onClick={() => handleUnsavePost(post.id ?? "")}
-                  className="text-2xl cursor-pointer dark:text-text-white text-text-charcoal"
-                />
-              ) : (
-                <IoBookmarkOutline
-                  onClick={() => handlePostSaving({ itemId: post.id ?? '', itemType: 'POST' })}
-                  className="text-2xl cursor-pointer dark:text-text-white text-text-charcoal"
-                />
-              )}
-            </div>
-          </div>
-
-          <span
-            onClick={handleCommentBox}
-            className="text-text-lavenderGray font-golos hover:cursor-pointer"
-          >
-            view all comments
-          </span>
-        </div>
-
-        {isCommentBoxOpen && (
-          <Comments
-            post={post}
-            isLiked={isLiked}
-            onLikeToggle={onLikeToggle}
-            onClose={handleCommentBox}
-            onCommentCountChange={handlingCommentCount}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className={`bg-white dark:bg-gray-900 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-800 ${
+        compact ? 'max-w-sm' : 'w-full max-w-[470px] mx-auto'
+      }`}
+    >
+      {/* Header - Fixed height */}
+      <div className="flex items-center justify-between p-3 border-b border-gray-100 dark:border-gray-800">
+        <div 
+          className="flex items-center gap-2 cursor-pointer flex-1 min-w-0"
+          onClick={handleProfileClick}
+        >
+          <UserAvatar
+            src={post.profileImage}
+            alt={post.username}
+            size="sm"
+            showStatus={false}
           />
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="font-semibold text-sm text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate">
+              {post.username}
+            </span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {formatTime(post.createdAt)}
+            </span>
+          </div>
+        </div>
+        
+        <div className="relative flex-shrink-0">
+          <button
+            onClick={() => setIsMenuOpen(true)}
+            className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            <BsThreeDots className="w-5 h-5" />
+          </button>
+          
+        {isMenuOpen && (
+  <PostMenu
+    postId={post.id}
+    postType="POST"
+    isOwner={isOwner}
+    onClose={() => setIsMenuOpen(false)}
+    onDelete={onDelete}
+    onUpdate={onUpdate}
+    postContent={post.content || ''}
+  />
+)}
+        </div>
+      </div>
+
+      {/* Media Container - Fixed aspect ratio */}
+      <div 
+        ref={mediaContainerRef}
+        className={`relative w-full overflow-hidden bg-black ${
+          aspectRatio === 'portrait' ? 'aspect-[9/16]' :
+          aspectRatio === 'landscape' ? 'aspect-[16/9]' :
+          'aspect-square'
+        }`}
+      >
+        {/* Current Media */}
+        {currentMedia && (
+          <>
+            {isVideo(currentMedia) ? (
+              <div className="relative w-full h-full">
+                <video
+                  ref={videoRef}
+                  src={currentMedia}
+                  className="w-full h-full object-contain"
+                  loop
+                  muted={isMuted}
+                  onClick={handleVideoPlay}
+                />
+                
+                {/* Video Controls Overlay */}
+                <div className={`absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent flex items-center justify-center transition-opacity duration-300 ${
+                  isHovered || !isPlaying ? 'opacity-100' : 'opacity-0'
+                }`}>
+                  <div className="flex items-center gap-3 p-2 bg-black/50 backdrop-blur-sm rounded-full">
+                    <button
+                      onClick={handleVideoPlay}
+                      className="p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
+                    >
+                      {isPlaying ? (
+                        <FaPause className="w-4 h-4 text-white" />
+                      ) : (
+                        <FaPlay className="w-4 h-4 text-white" />
+                      )}
+                    </button>
+                    
+                    <button
+                      onClick={handleVideoMute}
+                      className="p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
+                    >
+                      {isMuted ? (
+                        <FaVolumeMute className="w-4 h-4 text-white" />
+                      ) : (
+                        <FaVolumeUp className="w-4 h-4 text-white" />
+                      )}
+                    </button>
+                    
+                    <button
+                      onClick={handleFullscreen}
+                      className="p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
+                    >
+                      {isFullscreen ? (
+                        <FaCompress className="w-4 h-4 text-white" />
+                      ) : (
+                        <FaExpand className="w-4 h-4 text-white" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <img
+                src={currentMedia}
+                alt={`Post by ${post.username}`}
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-700 cursor-zoom-in"
+                loading="lazy"
+              />
+            )}
+          </>
+        )}
+
+        {/* Media Navigation Dots */}
+        {post.mediaUrls && post.mediaUrls.length > 1 && (
+          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1.5">
+            {post.mediaUrls.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentMediaIndex(index)}
+                className={`w-1.5 h-1.5 rounded-full transition-all ${
+                  index === currentMediaIndex
+                    ? 'bg-white w-3'
+                    : 'bg-white/50 hover:bg-white/75'
+                }`}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Media Navigation Arrows */}
+        {post.mediaUrls && post.mediaUrls.length > 1 && isHovered && (
+          <>
+            {currentMediaIndex > 0 && (
+              <button
+                onClick={handlePrevMedia}
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 p-1.5 bg-black/50 hover:bg-black/75 rounded-full transition-colors"
+              >
+                <div className="w-4 h-4 border-l-2 border-t-2 border-white transform rotate-45 translate-x-0.5" />
+              </button>
+            )}
+            
+            {currentMediaIndex < post.mediaUrls.length - 1 && (
+              <button
+                onClick={handleNextMedia}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 bg-black/50 hover:bg-black/75 rounded-full transition-colors"
+              >
+                <div className="w-4 h-4 border-r-2 border-t-2 border-white transform -rotate-45 -translate-x-0.5" />
+              </button>
+            )}
+          </>
         )}
       </div>
 
-      {isPostMenu && (
-        <PostMenu
-          onClose={() => setIsPostMenu(false)}
-          postId={post.id ?? ''}
-          postContent={post.content}
-        />
-      )}
+      {/* Actions Bar - Compact */}
+      <div className="p-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleLike}
+              disabled={isSaving}
+              className="group relative"
+            >
+              <motion.div
+                whileTap={{ scale: 1.2 }}
+                className="p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              >
+                {isLiked ? (
+                  <FaHeart className="w-5 h-5 text-red-500" />
+                ) : (
+                  <FaRegHeart className="w-5 h-5 text-gray-700 dark:text-gray-300 group-hover:text-red-500 transition-colors" />
+                )}
+              </motion.div>
+            </button>
 
-      {likedUsersListOpen && (
-        <LikedUsers
-          postId={post.id ?? ''}
-          onClose={handleLikedUsersListToggle}
-        />
-      )}
+            <button
+              onClick={() => setIsCommentsOpen(true)}
+              className="group"
+            >
+              <motion.div
+                whileTap={{ scale: 1.2 }}
+                className="p-1.5 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+              >
+                <FaRegComment className="w-5 h-5 text-gray-700 dark:text-gray-300 group-hover:text-blue-500 transition-colors" />
+              </motion.div>
+            </button>
 
-      {isSharing && (
-        <SharingOption
-          postId={post.id ?? ''}
-          postType="POST" // ✅ Add this prop
-          postPreview={{ // ✅ Add post preview data
-            thumbnail: post.mediaUrls?.[0],
-            content: post.content,
-            mediaUrl: post.mediaUrls?.[0]
-          }}
-          onClose={() => setIsSharing(false)} // ✅ Update to setIsSharing(false)
-        />
-      )}
-    </>
+            <button 
+              onClick={() => setIsSharingOpen(true)} 
+              className="group"
+            >
+              <div className="p-1.5 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors">
+                <FaShare className="w-5 h-5 text-gray-700 dark:text-gray-300 group-hover:text-green-500 transition-colors" />
+              </div>
+            </button>
+          </div>
+
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="group relative"
+          >
+            <motion.div
+              whileTap={{ scale: 1.2 }}
+              className="p-1.5 rounded-full hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors"
+            >
+              {isSaving ? (
+                <div className="w-5 h-5 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin" />
+              ) : isSaved ? (
+                <FaBookmark className="w-5 h-5 text-yellow-500" />
+              ) : (
+                <FaRegBookmark className="w-5 h-5 text-gray-700 dark:text-gray-300 group-hover:text-yellow-500 transition-colors" />
+              )}
+            </motion.div>
+          </button>
+        </div>
+
+        {/* Likes and Comments Count */}
+        <div className="flex items-center gap-3 mb-2">
+          <span className="font-semibold text-sm text-gray-900 dark:text-white">
+            {formatNumber(likeCount)} likes
+          </span>
+          <button
+            onClick={() => setIsCommentsOpen(true)}
+            className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          >
+            {formatNumber(commentCount)} comments
+          </button>
+        </div>
+
+        {/* Caption - Compact */}
+        {post.content && (
+          <div className="mb-2">
+            <div 
+              className={`text-sm text-gray-800 dark:text-gray-200 ${
+                showCaption ? '' : 'line-clamp-2'
+              }`}
+            >
+              <span className="font-semibold mr-1.5">{post.username}</span>
+              {post.content}
+            </div>
+            {post.content.length > 100 && (
+              <button
+                onClick={() => setShowCaption(!showCaption)}
+                className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mt-0.5"
+              >
+                {showCaption ? 'Show less' : '...more'}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* View Comments Button */}
+        <button
+          onClick={() => setIsCommentsOpen(true)}
+          className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+        >
+          View all {commentCount} comments
+        </button>
+      </div>
+
+      {/* Comments Modal */}
+      <AnimatePresence>
+        {isCommentsOpen && (
+          <PostCommentsModal
+            post={post}
+            isOpen={isCommentsOpen}
+            onClose={() => setIsCommentsOpen(false)}
+            onLikeChange={(liked, count) => {
+              setIsLiked(liked);
+              setLikeCount(count);
+            }}
+            onCommentCountChange={setCommentCount}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Sharing Modal */}
+      <AnimatePresence>
+        {isSharingOpen && (
+          <SharingOption
+            postId={post.id}
+            postType={"POST"}
+            postPreview={{
+              thumbnail: post.mediaUrls?.[0] || '',
+              content: post.content || '',
+              mediaUrl: post.mediaUrls?.[0] || ''
+            }}
+            onClose={() => setIsSharingOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 };
 

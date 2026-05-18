@@ -4,7 +4,10 @@ import { tokenService } from "../../../services/user/tokenService";
 
 const AuthRoute: React.FC = () => {
   const accessToken = tokenService.getAccessToken();
-  if (accessToken) return <Navigate to="/" />;
+  if (accessToken){
+   console.log("accesstoken detected in auth route-------------",accessToken) 
+   return <Navigate to="/" />;
+  }
   return <Outlet />;
 };
 

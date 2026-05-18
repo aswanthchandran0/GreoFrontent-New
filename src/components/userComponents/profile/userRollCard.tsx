@@ -2,13 +2,13 @@ import { FaRegHeart } from "react-icons/fa";
 import { FaRegComment } from "react-icons/fa";
 
 import { DEFAULT_PROFILE_IMAGE } from "../../../assets/images";
-import { IRoll } from "./UserPosts";
 import { useState } from "react";
-import OpenedRoll from "../Roll/OpenedRoll";
+import OpenedRoll from "../reel/OpenedRoll";
+import { IReel } from "../../../Types/reelTypes";
 
 
 interface props{
-    roll:IRoll
+    roll:IReel
 }
 
 

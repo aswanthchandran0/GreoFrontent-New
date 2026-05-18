@@ -9,6 +9,7 @@ import {
   FaUser
 } from 'react-icons/fa';
 import { useCall } from '../../../context/CallContext';
+import toast from 'react-hot-toast';
 
 const IncomingCallModal: React.FC = () => {
   const { 
@@ -36,7 +37,7 @@ const IncomingCallModal: React.FC = () => {
   }, [ringing]);
   
   if (!callerInfo) return null;
-  
+ 
   const handleAnswer = () => {
     setRinging(false);
     answerCall();

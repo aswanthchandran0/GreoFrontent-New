@@ -1,3 +1,4 @@
+// src/components/layout/MainLayout.tsx
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import NavBar from "./NavBar";
 import { setNavigateFunction } from "../../utils/navigate";
@@ -12,7 +13,7 @@ const MainLayout = () => {
   const [newPosts, setNewPosts] = useState<IPost | null>(null);
   const user = useSelector((state: RootState) => state.UserReducer.user);
   const navigate = useNavigate();
-  const location = useLocation(); // Get current location
+  const location = useLocation();
   const isDarkMode = useSelector((state: RootState) => state.preferences.darkMode);
   const { receivingCall } = useCall();
 
@@ -46,16 +47,16 @@ const MainLayout = () => {
   }, [isDarkMode]);
 
   return (
-    <>
-      <div className="relative w-screen h-screen bg-background-light dark:bg-background-dark">
-        {receivingCall && <IncomingCallModal />}
-        
-        {/* Conditionally render NavBar */}
-        {!isRollPage && <NavBar onNewPost={handleNewPost} />}
-        
+    <div className="min-h-screen bg-gray-50 dark:bg-background-dark">
+      {receivingCall && <IncomingCallModal />}
+      
+      {/* Conditionally render NavBar */}
+      {!isRollPage && <NavBar onNewPost={handleNewPost} />}
+      
+      <div className="pt-16">
         <Outlet context={{ newPosts }} />
       </div>
-    </>
+    </div>
   );
 };
 

@@ -10,22 +10,37 @@ import toast from "react-hot-toast";
 
 // thunk middleware 
 
+// In your admin slice/file
+
 export const adminAuthenticate = createAsyncThunk(
     "adminAuthenticate",
-    async (adminData:{email:string,password:string},thunkAPI) =>{
-     try{
-        const response = await adminSigninApi(adminData.email,adminData.password)
-        console.log('response',response)
-        tokenService.setAdminToken(response.data.accessToken)
-        return response.data.admin
-     }catch(error){
-        toast.error("invalid credential")
-        if (axios.isAxiosError(error))
-            thunkAPI.rejectWithValue(error.response?.data?.error);
-          else return thunkAPI.rejectWithValue("Something went wrong");
+    async (adminData: { email: string; password: string }, thunkAPI) => {
+        try {
+            const response = await adminSigninApi(adminData.email, adminData.password);
+            console.log('response in admin signin----------------------------------', response);
+            
+            // ✅ FIX: Access token from response.data.data.accessToken
+            const accessToken = response.data.data?.accessToken;
+            const admin = response.data.data?.admin;
+            
+            if (accessToken) {
+                tokenService.setAdminToken(accessToken);
+                console.log('Admin token stored successfully');
+                return admin;
+            } else {
+                console.error('No access token in response:', response.data);
+                throw new Error('No access token received');
+            }
+        } catch (error) {
+            console.error('Admin signin error:', error);
+            toast.error("Invalid credentials");
+            if (axios.isAxiosError(error)) {
+                return thunkAPI.rejectWithValue(error.response?.data?.error || error.response?.data?.message);
+            }
+            return thunkAPI.rejectWithValue("Something went wrong");
         }
     }
-)
+);
 
 
 
